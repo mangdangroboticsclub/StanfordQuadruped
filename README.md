@@ -38,4 +38,5 @@ You can find the bill of materials, pre-made kit purchasing options, assembly in
 - Feel free to raise an issue (https://github.com/stanfordroboticsclub/StanfordQuadruped/issues/new/choose) or email me at nathankau [at] stanford [dot] edu
 - We also have a Google group set up here: https://groups.google.com/forum/#!forum/stanford-quadrupeds
 
+## fork  from stanfordroboticsclub/StanfordQuadruped . will be updated by Mangdang Robot team
 
