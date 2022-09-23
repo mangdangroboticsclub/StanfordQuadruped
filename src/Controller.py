@@ -63,7 +63,7 @@ class Controller:
         return new_foot_locations, contact_modes
 
 
-    def run(self, state, command):
+    def run(self, state, command, disp):
         """Steps the controller forward one timestep
 
         Parameters
@@ -79,6 +79,8 @@ class Controller:
             state.behavior_state = self.trot_transition_mapping[state.behavior_state]
         elif command.hop_event:
             state.behavior_state = self.hop_transition_mapping[state.behavior_state]
+
+        disp.show_state(state.behavior_state)    
 
         if state.behavior_state == BehaviorState.TROT:
             state.foot_locations, contact_modes = self.step_gait(
@@ -98,8 +100,8 @@ class Controller:
             (roll, pitch, yaw) = quat2euler(state.quat_orientation)
             correction_factor = 0.8
             max_tilt = 0.4
-            roll_compensation = correction_factor * np.clip(roll, -max_tilt, max_tilt)
-            pitch_compensation = correction_factor * np.clip(pitch, -max_tilt, max_tilt)
+            roll_compensation = correction_factor * np.clip(-roll, -max_tilt, max_tilt)
+            pitch_compensation = correction_factor * np.clip(-pitch, -max_tilt, max_tilt)
             rmat = euler2mat(roll_compensation, pitch_compensation, 0)
 
             rotated_foot_locations = rmat.T @ rotated_foot_locations
@@ -111,7 +113,7 @@ class Controller:
         elif state.behavior_state == BehaviorState.HOP:
             state.foot_locations = (
                 self.config.default_stance
-                + np.array([0, 0, -0.09])[:, np.newaxis]
+                + np.array([0, 0, -0.03])[:, np.newaxis]
             )
             state.joint_angles = self.inverse_kinematics(
                 state.foot_locations, self.config
@@ -120,7 +122,7 @@ class Controller:
         elif state.behavior_state == BehaviorState.FINISHHOP:
             state.foot_locations = (
                 self.config.default_stance
-                + np.array([0, 0, -0.22])[:, np.newaxis]
+                + np.array([0, 0, -0.105])[:, np.newaxis]
             )
             state.joint_angles = self.inverse_kinematics(
                 state.foot_locations, self.config

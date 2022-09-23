@@ -1,3 +1,30 @@
+# Mini Pupper
+
+## Overview
+
+This branch contains modifications to the code for Stanford Pupper to make it work with the kit from MangDang https://www.mangdang.net
+
+## Installation
+
+Copy Ubuntu 22.04 to a SD card. Install https://github.com/mangdangroboticsclub/minipupper-bsp.git Run the test script to ensure your installation works as expected.
+
+Clone this repo: git clone -b minipupper https://github.com/mangdangroboticsclub/StanfordQuadruped.git
+cd StanfordQuadruped
+./install.sh
+
+configure the network:
+/configure_network.sh <SSID> <password>
+
+This will overwrite your current network configuration, enable the wireless network and breate a bridge interface with the IP address of 10.0.0.10/24 as required by UDPComms. This will not work if any of your interfaces is already connected to the 10.0.0.0/24 network. The network configuration becomes active with the next reboot.
+
+sudo reboot
+
+In case you want to use https://github.com/stanfordroboticsclub/PupperKeyboardController.git
+
+ sudo apt-get install libsdl2-2.0-0
+ sudo pip3 install pygame
+ git clone https://github.com/stanfordroboticsclub/PupperKeyboardController.git
+
 # Stanford Quadruped
 
 ## Overview

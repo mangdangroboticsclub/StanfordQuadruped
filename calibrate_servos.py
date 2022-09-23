@@ -1,5 +1,6 @@
-from pupper.HardwareInterface import HardwareInterface
-from pupper.Config import PWMParams, ServoParams
+from MangDang.minipupper.HardwareInterface import HardwareInterface
+from MangDang.minipupper.Config import PWMParams, ServoParams
+import MangDang.minipupper.nvram as nvram
 import numpy as np
 import re
 
@@ -12,7 +13,7 @@ def get_motor_name(i, j):
 
 
 def get_motor_setpoint(i, j):
-    data = np.array([[0, 0, 0, 0], [45, 45, 45, 45], [45, 45, 45, 45]])
+    data = np.array([[0, 0, 0, 0], [45, 45, 45, 45], [-45, -45, -45, -45]])
     return data[i, j]
 
 
@@ -156,24 +157,9 @@ def calibrate_angle_offset(hardware_interface):
 
 
 def overwrite_ServoCalibration_file(servo_params):
-    preamble = """# WARNING: This file is machine generated. Edit at your own risk.
-
-import numpy as np
-
-"""
-    # Format array object string for np.array
-    p1 = re.compile("([0-9]\.) ( *)") # pattern to replace the space that follows each number with a comma
-    partially_formatted_matrix = p1.sub(r"\1,\2", str(servo_params.neutral_angle_degrees))
-    p2 = re.compile("(\]\n)") # pattern to add a comma at the end of the first two lines
-    formatted_matrix_with_required_commas = p2.sub("],\n", partially_formatted_matrix)
-
-    # Overwrite pupper/ServoCalibration.py file with modified values
-    with open("pupper/ServoCalibration.py", "w") as f:
-        print(preamble, file = f)
-        print("MICROS_PER_RAD = {:.3f} * 180.0 / np.pi".format(degrees_to_radians(servo_params.micros_per_rad)), file = f)
-        print("NEUTRAL_ANGLE_DEGREES = np.array(", file = f)
-        print(formatted_matrix_with_required_commas, file = f)
-        print(")", file = f)
+    data = {'MICROS_PER_RAD': servo_params.micros_per_rad,
+            'NEUTRAL_ANGLE_DEGREES': servo_params.neutral_angle_degrees}
+    nvram.write(data)
 
 
 def main():
@@ -189,5 +175,5 @@ def main():
     print("Calibrated neutral angles:")
     print(hardware_interface.servo_params.neutral_angle_degrees)
 
-
-main()
+if __name__ == "__main__":
+    main()

@@ -4,6 +4,7 @@ import time
 from src.State import BehaviorState, State
 from src.Command import Command
 from src.Utilities import deadband, clipped_first_order_filter
+from MangDang.minipupper.shutdown import ShutDown
 
 
 class JoystickInterface:
@@ -20,13 +21,22 @@ class JoystickInterface:
         self.udp_handle = UDPComms.Subscriber(udp_port, timeout=0.3)
         self.udp_publisher = UDPComms.Publisher(udp_publisher_port)
 
+        self.sutdown_time = ShutDown()
 
-    def get_command(self, state, do_print=False):
+    def get_command(self, state, disp, do_print=False):
         try:
             msg = self.udp_handle.get()
             command = Command()
             
             ####### Handle discrete commands ########
+
+            # Check for shotdown requests
+            if msg["triangle"]:
+                disp.show_state(BehaviorState.SHUTDOWN)
+                self.sutdown_time.request_shutdown()
+            else:
+                self.sutdown_time.cancel_shutdown()
+
             # Check if requesting a state transition to trotting, or from trotting to resting
             gait_toggle = msg["R1"]
             command.trot_event = (gait_toggle == 1 and self.previous_gait_toggle == 0)

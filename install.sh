@@ -2,15 +2,23 @@ yes | sudo apt-get install libatlas-base-dev
 yes | pip3 install numpy transforms3d pigpio pyserial
 yes | pip install numpy transforms3d pigpio pyserial
 yes | sudo pip install numpy transforms3d pigpio pyserial
+sudo apt-get install -y unzip
 
 cd ..
 git clone https://github.com/stanfordroboticsclub/PupperCommand.git
 cd PupperCommand
+sed -i "s/pi/ubuntu/" joystick.service
+sudo bash install.sh
+cd ..
+
+git clone https://github.com/stanfordroboticsclub/UDPComms.git
+cd UDPComms
 sudo bash install.sh
 cd ..
 
 git clone https://github.com/stanfordroboticsclub/PS4Joystick.git
 cd PS4Joystick
+sed -i "s/pi/ubuntu/" joystick.service
 sudo bash install.sh
 cd ..
 sudo systemctl enable joystick

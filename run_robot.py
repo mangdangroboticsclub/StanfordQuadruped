@@ -3,10 +3,11 @@ import time
 from src.IMU import IMU
 from src.Controller import Controller
 from src.JoystickInterface import JoystickInterface
-from src.State import State
-from pupper.HardwareInterface import HardwareInterface
-from pupper.Config import Configuration
+from src.State import BehaviorState, State
+from MangDang.minipupper.HardwareInterface import HardwareInterface
+from MangDang.minipupper.Config import Configuration
 from pupper.Kinematics import four_legs_inverse_kinematics
+from MangDang.minipupper.display import Display
 
 def main(use_imu=False):
     """Main program
@@ -15,6 +16,8 @@ def main(use_imu=False):
     # Create config
     config = Configuration()
     hardware_interface = HardwareInterface()
+    disp = Display()
+    disp.show_ip()
 
     # Create imu handle
     if use_imu:
@@ -43,7 +46,7 @@ def main(use_imu=False):
     while True:
         print("Waiting for L1 to activate robot.")
         while True:
-            command = joystick_interface.get_command(state)
+            command = joystick_interface.get_command(state, disp)
             joystick_interface.set_color(config.ps4_deactivated_color)
             if command.activate_event == 1:
                 break
@@ -58,9 +61,10 @@ def main(use_imu=False):
             last_loop = time.time()
 
             # Parse the udp joystick commands and then update the robot controller's parameters
-            command = joystick_interface.get_command(state)
+            command = joystick_interface.get_command(state, disp)
             if command.activate_event == 1:
                 print("Deactivating Robot")
+                disp.show_state(BehaviorState.DEACTIVATED)
                 break
 
             # Read imu data. Orientation will be None if no data was available
@@ -70,7 +74,7 @@ def main(use_imu=False):
             state.quat_orientation = quat_orientation
 
             # Step the controller forward by dt
-            controller.run(state, command)
+            controller.run(state, command, disp)
 
             # Update the pwm widths going to the servos
             hardware_interface.set_actuator_postions(state.joint_angles)
