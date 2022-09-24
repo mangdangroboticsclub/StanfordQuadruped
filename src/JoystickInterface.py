@@ -4,7 +4,7 @@ import time
 from src.State import BehaviorState, State
 from src.Command import Command
 from src.Utilities import deadband, clipped_first_order_filter
-from MangDang.minipupper.shutdown import ShutDown
+from MangDang.mini_pupper.shutdown import ShutDown
 
 
 class JoystickInterface:

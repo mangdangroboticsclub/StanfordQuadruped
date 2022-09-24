@@ -4,10 +4,10 @@ from src.IMU import IMU
 from src.Controller import Controller
 from src.JoystickInterface import JoystickInterface
 from src.State import BehaviorState, State
-from MangDang.minipupper.HardwareInterface import HardwareInterface
-from MangDang.minipupper.Config import Configuration
+from MangDang.mini_pupper.HardwareInterface import HardwareInterface
+from MangDang.mini_pupper.Config import Configuration
 from pupper.Kinematics import four_legs_inverse_kinematics
-from MangDang.minipupper.display import Display
+from MangDang.mini_pupper.display import Display
 
 def main(use_imu=False):
     """Main program

@@ -6,9 +6,9 @@ This branch contains modifications to the code for Stanford Pupper to make it wo
 
 ## Installation
 
-Copy Ubuntu 22.04 to a SD card. Install https://github.com/mangdangroboticsclub/minipupper-bsp.git Run the test script to ensure your installation works as expected.
+Copy Ubuntu 22.04 to a SD card. Install https://github.com/mangdangroboticsclub/mini_pupper-bsp.git Run the test script to ensure your installation works as expected.
 
-Clone this repo: git clone -b minipupper https://github.com/mangdangroboticsclub/StanfordQuadruped.git
+Clone this repo: git clone -b mini_pupper https://github.com/mangdangroboticsclub/StanfordQuadruped.git
 cd StanfordQuadruped
 ./install.sh
 
