@@ -1,3 +1,15 @@
+#!/bin/bash
+
+# check Ubuntu version
+source /etc/os-release
+
+if [[ $UBUNTU_CODENAME != 'jammy' ]]
+then
+    echo "Ubuntu 22.04.1 LTS (Jammy Jellyfish) is required"
+    echo "You are using $VERSION"
+    exit 1
+fi
+
 yes | sudo apt-get install libatlas-base-dev
 yes | pip3 install numpy transforms3d pigpio pyserial
 yes | pip install numpy transforms3d pigpio pyserial
