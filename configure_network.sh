@@ -16,8 +16,8 @@ network:
     wifis:
         wlan0:
             access-points:
-                hdumcke:
-                    password: "let me in"
+                $1:
+                    password: "$2"
             dhcp4: true
             optional: true
     bridges:
