@@ -15,5 +15,8 @@ cd ~
 
 source  ~/mini_pupper_venv/bin/activate
 pip install numpy transforms3d pigpio pyserial
-cd ~/StanfordQuadruped/tests/tests
-pytest -v
+cd ~/StanfordQuadruped/tests/integration_tests
+COVERAGE_PROCESS_START=$(pwd)/.coveragerc coverage run -m pytest -v
+coverage combine
+coverage report
+coverage html
