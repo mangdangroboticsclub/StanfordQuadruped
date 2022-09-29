@@ -13,6 +13,8 @@ git clone https://github.com/mangdangroboticsclub/mini_pupper_bsp.git
 
 virtualenv mini_pupper_venv
 source  mini_pupper_venv/bin/activate
+pip install coverage
+echo "import coverage; coverage.process_startup()" > ~/mini_pupper_venv/lib/python3.10/site-packages/.pth
 pip install -e ~/mini_pupper_bsp/mock_api
 # test installation of mock API
 cd ~/mini_pupper_bsp/mock_api/tests
@@ -26,3 +28,6 @@ pip install msgpack
 cd ~
 git clone https://github.com/mangdangroboticsclub/mini_pupper_web_controller.git
 pip install -e mini_pupper_web_controller/joystick_sim
+# test installation of joystick_sim
+cd ~/mini_pupper_web_controller/joystick_sim/tests/
+pytest
