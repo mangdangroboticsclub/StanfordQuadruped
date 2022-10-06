@@ -44,4 +44,4 @@ sudo systemctl start robot
 
 sudo mv restart_joy.service /lib/systemd/system/
 sudo mv joystart.sh /sbin/
-systemctl enable restart_joy
+sudo systemctl enable restart_joy
