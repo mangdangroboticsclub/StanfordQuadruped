@@ -1,25 +1,12 @@
 #!/bin/bash
 
-if [ "$#" -ne 2 ]; then
-    echo "Usage: $0 <ssid> <wifi password>"
-    exit 1
-fi
-
 sudo apt-get install -y bridge-utils
 
-cat > /tmp/mini-pupper.yaml << EOF
-network:
-    ethernets:
-        eth0:
-            dhcp4: true
-            optional: true
-    wifis:
-        wlan0:
-            access-points:
-                $1:
-                    password: "$2"
-            dhcp4: true
-            optional: true
+CONFIGFILE=$(ls /etc/netplan/*)
+cp $CONFIGFILE /tmp/mini-pupper.yaml
+sed -i "/version: 2/d" /tmp/mini-pupper.yaml
+
+cat >> /tmp/mini-pupper.yaml << EOF
     bridges:
         br0:
             addresses: [10.0.0.10/24]
@@ -33,3 +20,4 @@ EOF
 
 sudo rm -f /etc/netplan/*
 sudo cp /tmp/mini-pupper.yaml /etc/netplan/
+sudo netplan apply
