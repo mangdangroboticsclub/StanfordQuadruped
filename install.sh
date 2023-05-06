@@ -24,6 +24,8 @@ sudo apt-get install -y unzip
 
 # add bridge to network configuration
 $BASEDIR/configure_network.sh
+# reconfigure network each time network configuration has changed
+echo $BASEDIR/configure_network.sh >> /home/ubuntu/mini_pupper_bsp/System/check-reconfigure.sh
 
 cd ~
 git clone https://github.com/stanfordroboticsclub/PupperCommand.git
@@ -54,3 +56,16 @@ sudo systemctl start robot
 sudo mv restart_joy.service /lib/systemd/system/
 sudo mv joystart.sh /sbin/
 sudo systemctl enable restart_joy
+source  ~/mini-pupper-release
+if [ "$MACHINE" == "x86_64" ]
+then
+    if [ "$HARDWARE" == "mini_pupper_2" ]
+    then
+        sudo systemctl start esp32-proxy &
+        sudo systemctl start battery_monitor &
+    else
+        sudo systemctl start battery_monitor
+    fi
+    sudo systemctl start rc-local
+    sudo systemctl start robot
+fi
