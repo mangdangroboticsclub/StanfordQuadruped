@@ -1,15 +1,17 @@
-# mini pupper
+# Mini Pupper
 
 ## Overview
 
-This branch contains modifications to the code of Stanford Pupper to make mini pupper work from [MangDang](https://www.mangdang.net)  
+![MP and MP2](imgs/MP.MP2.smallsize.jpg)
+
+This branch contains modifications to the code of Stanford Pupper to make Mini Pupper and Mini Pupper 2 work.
 
 ## Installation
 
-Before installation, you need install [mini_pupper_bsp](https://github.com/mangdangroboticsclub/mini_pupper_bsp.git)  repo and run the test script to ensure your installation works as expected.
+Before installation, you need to install [mini_pupper_bsp](https://github.com/mangdangroboticsclub/mini_pupper_bsp.git)  repo and run the test script to ensure your installation works as expected.
 
-After install [mini_pupper_bsp](https://github.com/mangdangroboticsclub/mini_pupper_bsp.git), please follow the below steps.
-Clone this repo : 
+After that, please follow the below steps.
+
 ```
 cd /home/ubuntu/
 git clone https://github.com/mangdangroboticsclub/StanfordQuadruped.git
@@ -23,12 +25,7 @@ configure the network, this will overwrite your current network configuration, e
 ./configure_network.sh <SSID> <password>
 sudo reboot
 ```
-In case you want to use keyboard to control mini pupper, please refer to the below repo,
-https://github.com/stanfordroboticsclub/PupperKeyboardController.git
 
-```
-sudo apt-get install libsdl2-2.0-0
-sudo pip3 install pygame
-git clone https://github.com/stanfordroboticsclub/PupperKeyboardController.git
-```
+
+If you want use the web browser or keyboard to control your Mini Pupper, please continue to [here](https://github.com/mangdangroboticsclub/mini_pupper_web_controller).
 
