@@ -19,7 +19,6 @@ echo STANFORD_VERSION=\"$(cd $BASEDIR; ~/mini_pupper_bsp/get-version.sh)\" >> ~/
 sudo apt-get install -y libatlas-base-dev
 sudo pip3 install numpy transforms3d pyserial
 sudo pip install numpy transforms3d pyserial
-sudo pip install numpy transforms3d pyserial
 sudo apt-get install -y unzip
 
 cd ~
