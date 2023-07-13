@@ -31,13 +31,5 @@ cd StanfordQuadruped
 ./install.sh
 ```
 
-configure the network, this will overwrite your current network configuration, enable the wireless network and breate a bridge interface with the IP address of 10.0.0.10/24 as required by UDPComms. This will not work if any of your interfaces is already connected to the 10.0.0.0/24 network. The network configuration becomes active with the next reboot.
-
-```
-./configure_network.sh <SSID> <password>
-sudo reboot
-```
-
-
 If you want to use the web browser or keyboard to control your Mini Pupper, please continue to [here](https://github.com/mangdangroboticsclub/mini_pupper_web_controller).
 
