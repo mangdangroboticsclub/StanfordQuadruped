@@ -22,11 +22,6 @@ sudo pip install numpy transforms3d pyserial
 sudo pip install numpy transforms3d pyserial
 sudo apt-get install -y unzip
 
-# add bridge to network configuration
-$BASEDIR/configure_network.sh
-# reconfigure network each time network configuration has changed
-echo $BASEDIR/configure_network.sh >> /home/ubuntu/mini_pupper_bsp/System/check-reconfigure.sh
-
 cd ~
 git clone https://github.com/stanfordroboticsclub/PupperCommand.git
 cd PupperCommand
@@ -43,6 +38,11 @@ git clone https://github.com/stanfordroboticsclub/PS4Joystick.git
 cd PS4Joystick
 sed -i "s/pi/ubuntu/" joystick.service
 sudo bash install.sh
+
+# add bridge to network configuration
+$BASEDIR/configure_network.sh
+# reconfigure network each time network configuration has changed
+echo $BASEDIR/configure_network.sh >> /home/ubuntu/mini_pupper_bsp/System/check-reconfigure.sh
 
 cd ~
 sudo systemctl enable joystick
