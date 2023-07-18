@@ -22,5 +22,5 @@ sudo rm -f /etc/netplan/*
 sudo cp /tmp/mini-pupper.yaml $CONFIGFILE
 sudo netplan apply
 # wait for network services
-sleep 5
+sleep 30
 fi
