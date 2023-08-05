@@ -20,6 +20,7 @@ class Controller:
         inverse_kinematics,
     ):
         self.config = config
+        self.dance_active_state = False
 
         self.smoothed_yaw = 0.0  # for REST mode only
         self.inverse_kinematics = inverse_kinematics
@@ -33,6 +34,13 @@ class Controller:
         self.trot_transition_mapping = {BehaviorState.REST: BehaviorState.TROT, BehaviorState.TROT: BehaviorState.REST, BehaviorState.HOP: BehaviorState.TROT, BehaviorState.FINISHHOP: BehaviorState.TROT}
         self.activate_transition_mapping = {BehaviorState.DEACTIVATED: BehaviorState.REST, BehaviorState.REST: BehaviorState.DEACTIVATED}
 
+    def dance_active(self,command):
+        if command.dance_activate_event == True:
+            if self.dance_active_state == False:
+                self.dance_active_state = True
+            else:
+                self.dance_active_state = False
+        return True
 
     def step_gait(self, state, command):
         """Calculate the desired foot locations for the next timestep
@@ -63,7 +71,7 @@ class Controller:
         return new_foot_locations, contact_modes
 
 
-    def run(self, state, command, disp):
+    def run(self, state, command, disp,location = np.zeros((3,4)),attitude = [0,0,0],robot_speed = [0,0,0]):
         """Steps the controller forward one timestep
 
         Parameters
@@ -80,7 +88,8 @@ class Controller:
         elif command.hop_event:
             state.behavior_state = self.hop_transition_mapping[state.behavior_state]
 
-        disp.show_state(state.behavior_state)    
+        disp.show_state(state.behavior_state)
+        self.dance_active(command)
 
         if state.behavior_state == BehaviorState.TROT:
             state.foot_locations, contact_modes = self.step_gait(
@@ -139,20 +148,46 @@ class Controller:
                     self.config.yaw_time_constant,
                 )
             )
-            # Set the foot locations to the default stance plus the standard height
-            state.foot_locations = (
-                self.config.default_stance
-                + np.array([0, 0, command.height])[:, np.newaxis]
-            )
-            # Apply the desired body rotation
-            rotated_foot_locations = (
-                euler2mat(
-                    command.roll,
-                    command.pitch,
-                    self.smoothed_yaw,
+
+            if self.dance_active_state == False:
+                #  Set the foot locations to the default stance plus the standard height
+                state.foot_locations = (
+                    self.config.default_stance
+                    + np.array([0, 0, command.height])[:, np.newaxis]
+                 )
+                # Apply the desired body rotation
+                rotated_foot_locations = (
+                    euler2mat(
+                        command.roll,
+                        command.pitch,
+                        self.smoothed_yaw,
+                    )
+                    @ state.foot_locations
                 )
-                @ state.foot_locations
-            )
+            else:
+                location_buf = np.zeros((3,4))
+                for index_i in range(3):
+                    for index_j in range(4):
+                        location_buf[index_i,index_j] = location[index_i][index_j]
+
+                if (abs(robot_speed[0])<0.01) and (abs(robot_speed[1])<0.01):
+                    state.foot_locations = location_buf
+                else:
+
+                    command.horizontal_velocity[0] = robot_speed[0]
+                    command.horizontal_velocity[1] = robot_speed[1]
+                    state.foot_locations,contact_modes = self.step_gait(state,command)
+
+                rotated_foot_locations = (
+                    euler2mat(
+                        attitude[0],
+                        attitude[1],
+                        attitude[2],
+                    )
+                    @ state.foot_locations
+                )
+
+
             state.joint_angles = self.inverse_kinematics(
                 rotated_foot_locations, self.config
             )

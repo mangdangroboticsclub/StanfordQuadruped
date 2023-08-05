@@ -8,6 +8,8 @@ from MangDang.mini_pupper.HardwareInterface import HardwareInterface
 from MangDang.mini_pupper.Config import Configuration
 from pupper.Kinematics import four_legs_inverse_kinematics
 from MangDang.mini_pupper.display import Display
+from src.MovementScheme import MovementScheme
+from src.danceSample import MovementLib
 
 def main(use_imu=False):
     """Main program
@@ -33,6 +35,10 @@ def main(use_imu=False):
     print("Creating joystick listener...")
     joystick_interface = JoystickInterface(config)
     print("Done.")
+
+    #Create movement group scheme instance and set a default false state
+    movementCtl = MovementScheme(MovementLib)
+    dance_active_state = False
 
     last_loop = time.time()
 
@@ -73,8 +79,23 @@ def main(use_imu=False):
             )
             state.quat_orientation = quat_orientation
 
+            # If "circle" button is clicked, switch dance_active_state between False/True.
+            if command.dance_activate_event == True:
+                if dance_active_state == False:
+                    dance_active_state = True
+                else:
+                    dance_active_state = False
+
             # Step the controller forward by dt
-            controller.run(state, command, disp)
+            if dance_active_state == True:
+            	# Caculate legsLocation, attitudes and speed using custom movement script
+                movementCtl.runMovementScheme()
+                legsLocation = movementCtl.getMovemenLegsLocation()
+                attitudes    = movementCtl.getMovemenAttitude()
+                speed        = movementCtl.getMovemenSpeed()
+                controller.run(state, command, disp, legsLocation, attitudes, speed)
+            else:
+                controller.run(state, command, disp)
 
             # Update the pwm widths going to the servos
             hardware_interface.set_actuator_postions(state.joint_angles)
