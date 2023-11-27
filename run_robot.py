@@ -20,6 +20,10 @@ def main(use_imu=False):
     hardware_interface = HardwareInterface()
     disp = Display()
     disp.show_ip()
+    # default torque/current is set to 500 for debug, 
+    # -1200 < current < 1200 (mA). Current ~150..300mA is offen set for mini pupper v2 pro servo. 
+    torque = [500,500,500,500,500,500,500,500,500,500,500,500]
+    #torque = [100,100,100,100,100,100,100,100,100,100,100,100]
 
     # Create imu handle
     if use_imu:
@@ -97,8 +101,8 @@ def main(use_imu=False):
             else:
                 controller.run(state, command, disp)
 
-            # Update the pwm widths going to the servos
-            hardware_interface.set_actuator_postions(state.joint_angles)
+            # Update joint angles and torque to the servos
+            hardware_interface.set_actuator_postions(state.joint_angles,torque)
 
 
 main()
