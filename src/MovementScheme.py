@@ -157,14 +157,15 @@ class SequenceInterpolation:
         """
         #update movement tick
         self.ExecuteTick = self.ExecuteTick + 1
-        if self.ExecuteTick >= self.InterpolationNumber:
+        if self.ExecuteTick > self.InterpolationNumber:
              self.ExecuteTick = 0
              self.updatePointPhase()
              self.updateInterpolationDelt()
-        self.PointNow[0] = self.PointPrevious[0] + self.TnterpolationDelt[0]
-        self.PointNow[1] = self.PointPrevious[1] + self.TnterpolationDelt[1]
-        self.PointNow[2] = self.PointPrevious[2] + self.TnterpolationDelt[2]
-        self.PointPrevious = self.PointNow
+        else:
+            self.PointNow[0] = self.PointPrevious[0] + self.TnterpolationDelt[0]
+            self.PointNow[1] = self.PointPrevious[1] + self.TnterpolationDelt[1]
+            self.PointNow[2] = self.PointPrevious[2] + self.TnterpolationDelt[2]
+            self.PointPrevious = self.PointNow
 
         return self.PointNow
 
@@ -319,7 +320,7 @@ class Movements:
         Returns:
         number
         """
-        return (self.SpeedMovements.PhaseNumberMax - 1)* self.SpeedMovements.InterpolationNumber
+        return (self.SpeedMovements.PhaseNumberMax - 1)* self.SpeedMovements.InterpolationNumber*self.SpeedMovements.SequenceExecuteCounter
         
     def getPhaseNumberMax(self):
         """
@@ -541,14 +542,14 @@ class MovementScheme:
 
         elif self.ststus == 'Movement':
              if self.movements_now.getPhaseNumberMax() > 1 :
-                 self.updateMovemenScheme(self.tick)
+                 self.updateMovemenScheme()
 
              self.legs_location_pre = self.legs_location_now
              self.speed_pre = self.speed_now 
              self.attitude_pre = self.attitude_now
              
              self.tick += 1
-             if self.tick >= now_ticks :
+             if self.tick >= now_ticks  and self.movement_now_number < len(self.movements_lib) - 1:
                  self.transition = True
                  self.tick = 0
 
