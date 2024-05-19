@@ -187,7 +187,8 @@ class Controller:
                     euler2mat(
                         attitude[0],
                         attitude[1],
-                        self.smoothed_yaw,
+                        #self.smoothed_yaw,
+                        attitude[2],
                     )
                     @ state.foot_locations
                 )
