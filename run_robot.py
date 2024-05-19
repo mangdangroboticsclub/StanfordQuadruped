@@ -9,7 +9,7 @@ from MangDang.mini_pupper.Config import Configuration
 from pupper.Kinematics import four_legs_inverse_kinematics
 from MangDang.mini_pupper.display import Display
 from src.MovementScheme import MovementScheme
-from src.danceSample import MovementLib
+from src.createDanceActionListSample import MovementLib
 
 def main(use_imu=False):
     """Main program

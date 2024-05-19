@@ -1,5 +1,5 @@
 #
-# Copyright 2023 MangDang (www.mangdang.net) 
+# Copyright 2024 MangDang (www.mangdang.net) 
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,11 +14,20 @@
 # limitations under the License.
 #
 # Description: You can use the following FPC(Flexible Programmable Choreography) APIs to define your Mini Pupper to dance.
-# Test method: 
+#
+# Test method1: use controller to do your designed movements 
 #   step1: Pair the controller to your Mini Pupper
 #   step2: Click controller "L1" button
 #   step3: Click controller "Circle" button 
 #   the mini pupper will dance based on your following script.
+#
+#
+#Test method2: run dancemove.py to do your designed movements
+#   method: type the following command line:
+#           python /home/ubuntu/StanfordQuadruped/dancemove.py
+#
+#
+# Movement Action API List without input parameters
 # stop()
 # look_up()
 # look_down()
@@ -37,10 +46,20 @@
 # move_leftback()
 # move_rightback()
 #
+# Movement Action API List wit input parameters
+# body_row(row_deg,  time_uni, time_acc)
+# gait_uni(v_x, v_y, time_uni, time_acc)
+# height_move(ht,    time_uni, time_acc)
+# head_move(pitch_deg, yaw_deg, time_uni, time_acc)
+# foreleg_lift(leg_index, ht,   time_uni, time_acc)
+# backleg_lift(leg_index, ht,   time_uni, time_acc)
+# 
+
 from src.MovementGroup import MovementGroups
 
 Move = MovementGroups()
 
+# movements without input parameters
 Move.look_right()
 Move.look_upperright()
 Move.look_up()
@@ -57,5 +76,21 @@ Move.move_left()
 Move.move_backward()
 Move.move_right()
 Move.stop()
+
+# movements with input parameters
+Move.head_move(20)
+Move.stop()
+Move.body_row(10)
+Move.body_row(-10)
+Move.stop()
+Move.gait_uni(0.25,0)
+Move.gait_uni(0.35, 0.1)
+Move.stop()
+Move.height_move(0.03)
+Move.height_move(-0.02)
+Move.stop()
+Move.gait_uni(0.1)
+Move.stop()
+
 
 MovementLib = Move.MovementLib

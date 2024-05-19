@@ -1,5 +1,5 @@
 #
-# Copyright 2023 MangDang (www.mangdang.net) 
+# Copyright 2024 MangDang (www.mangdang.net) 
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -181,6 +181,12 @@ class Movements:
         self.AttitudeEnable = attitude_enable
         self.LegsEnable = legs_enable
         self.ExitToStand = False
+        
+        #legs transition speed and gait acceleration
+        self.DeltLegsM = np.full((3,4), 0.0005)
+        self.DeltSpeedM = np.full(3, 0.001)
+        self.DeltAttitudeM = np.full(3, 1)
+        self.transTic = 70       #unit 1
 
         self.SpeedMovements = SequenceInterpolation('speed',2)
         self.AttitudeMovements = SequenceInterpolation('attitude',3)
@@ -199,6 +205,10 @@ class Movements:
         self.SpeedOutput = [0,0,0]          # x, y speed
         self.AttitudeOutput = [0,0,0]     # roll pitch yaw rate
         self.LegsLocationOutput = [[0,0,0,0],[0,0,0,0],[0,0,0,0]] # x,y,z for 4 legs
+        
+    def setTransitionTic(self, tic):
+        """ determin how many time steps it takes from current movement to the next one"""
+        self.transTic = tic
 
     def setInterpolationNumber(self,number):
         """set interpolation number for three parts
@@ -265,23 +275,21 @@ class Movements:
         Movements.setLegsSequence(self,sequenceLeg)
         Movements.setSpeedSequence(self,sequenceSpeed)
         Movements.setAttitudeSequence(self,sequenceAttitude)
-    
-
-    def runMovementSequence(self):
-        """you can set three parts state if Enable it will caculate the new interpolation point value, else will not
-        """
-        if self.SpeedEnable == 'SpeedEnable':
-            self.SpeedOutput = self.SpeedMovements.getNewPoint()
-
-        if self.AttitudeEnable == 'AttitudeEnable':
-            self.AttitudeOutput = self.AttitudeMovements.getNewPoint()
-
+                    
+    def runLegsSequence(self):
         if self.LegsEnable == 'LegsEnable':
             for leg in range(4):
                 leg_loaction = self.LegsMovements[leg].getNewPoint()
                 for xyz in range(3):
                     self.LegsLocationOutput[xyz][leg] = leg_loaction[xyz]
+    
+    def runAttitudeSequence(self):
+        if self.AttitudeEnable == 'AttitudeEnable':
+            self.AttitudeOutput = self.AttitudeMovements.getNewPoint()
 
+    def runSpeedSequence(self):
+        if self.SpeedEnable == 'SpeedEnable':
+            self.SpeedOutput = self.SpeedMovements.getNewPoint()
 
     def getSpeedOutput(self, state = 'Normal'):
         """get every interpolation point value of speed
@@ -320,14 +328,18 @@ class Movements:
         Returns:
         number
         """
-        return (self.SpeedMovements.PhaseNumberMax - 1)* self.SpeedMovements.InterpolationNumber*self.SpeedMovements.SequenceExecuteCounter
+        Speedticks = (self.SpeedMovements.PhaseNumberMax - 1)* self.SpeedMovements.InterpolationNumber*self.SpeedMovements.SequenceExecuteCounter
+        Attitudeticks = (self.AttitudeMovements.PhaseNumberMax - 1)* self.AttitudeMovements.InterpolationNumber*self.AttitudeMovements.SequenceExecuteCounter
+        Legsticks = (self.LegsMovements[0].PhaseNumberMax - 1)* self.LegsMovements[0].InterpolationNumber*self.LegsMovements[0].SequenceExecuteCounter
+        
+        return max(Speedticks, Attitudeticks, Legsticks)
         
     def getPhaseNumberMax(self):
         """
         Returns:
         the phase number in one movement
         """
-        return self.SpeedMovements.PhaseNumberMax
+        return self.SpeedMovements.PhaseNumberMax, self.AttitudeMovements.PhaseNumberMax, self.LegsMovements[0].PhaseNumberMax
 
 class MovementScheme:
     """this class is to contact two movement,finally you can through this class to get a movementlib which have a series of movement 
@@ -375,7 +387,10 @@ class MovementScheme:
         self.speed_pre = [0,0,0]
         self.speed_now = [0,0,0]
         
-        self.record_index_number = [] 
+        self.record_index_number = []
+        
+        # criterion that make sure delta of the movement transition are obtained at the begining of the transition and doesn't change later
+        self.getAccCommand = True 
 
     def updateMovementType(self):
         """used to update movement ,caculate which movement should be move
@@ -461,9 +476,23 @@ class MovementScheme:
 #                     speed_ready = np.array(speed_ready) + np.array(self.movements_lib[self.record_index_number[number_index]].getSpeedOutput('Init'))
 #                     attitude_ready = np.array(attitude_ready) + np.array(self.movements_lib[self.record_index_number[number_index]].getAttitudeOutput('Init'))
 
-             location_ready = np.array(self.movements_now.getLegsLocationOutput('Init'))
+             location_ready = np.array(self.movements_now.getLegsLocationOutput('Init')) #a matrix with 3 rows and 4 columns
              speed_ready = np.array(self.movements_now.getSpeedOutput('Init'))
              attitude_ready = np.array(self.movements_now.getAttitudeOutput('Init'))
+             if self.getAccCommand == True:
+                 self.movements_now.DeltLegsM = location_ready - self.legs_location_pre
+                 self.movements_now.DeltLegsM  = self.movements_now.DeltLegsM.astype(np.float64)
+                 self.movements_now.DeltLegsM /= self.movements_now.transTic
+                 
+                 self.movements_now.DeltSpeedM = speed_ready - self.speed_pre
+                 self.movements_now.DeltSpeedM = self.movements_now.DeltSpeedM.astype(np.float64)
+                 self.movements_now.DeltSpeedM /= self.movements_now.transTic
+                 
+                 self.movements_now.DeltAttitudeM = attitude_ready - self.attitude_pre
+                 self.movements_now.DeltAttitudeM = self.movements_now.DeltAttitudeM.astype(np.float64)
+                 self.movements_now.DeltAttitudeM /= self.movements_now.transTic
+                 self.getAccCommand = False
+             
              
              self.legs_location_now, self.entry_down = self.updateMovementLegsLocationGradient(self.legs_location_pre,location_ready)
              self.legs_location_pre = self.legs_location_now
@@ -490,6 +519,7 @@ class MovementScheme:
                  self.legslocation_done_index = np.zeros((3,4))
                  self.speed_done_index = [0,0]
                  self.attitude_done_index = [0,0,0]
+                 self.getAccCommand = True
 
         if self.ststus == 'Exit':
              if self.movements_pre.ExitToStand == True:
@@ -541,8 +571,13 @@ class MovementScheme:
 
 
         elif self.ststus == 'Movement':
-             if self.movements_now.getPhaseNumberMax() > 1 :
-                 self.updateMovemenScheme()
+             Nos, Noa, Nol = self.movements_now.getPhaseNumberMax()
+             if Nol > 1 :
+                 self.updateLegsScheme()
+             if Noa > 1 :
+                 self.updateAttitudeScheme()
+             if Nos > 1 :
+                 self.updateSpeedScheme()
 
              self.legs_location_pre = self.legs_location_now
              self.speed_pre = self.speed_now 
@@ -573,10 +608,8 @@ class MovementScheme:
             for leg_index in range(4):
 
                 diff = location_target[xyz_index][leg_index] - location_now[xyz_index][leg_index]
-                if diff > DeltLocationMax:
-                    loaction_gradient[xyz_index][leg_index] = location_now[xyz_index][leg_index] + DeltLocationMax
-                elif diff < -DeltLocationMax:
-                    loaction_gradient[xyz_index][leg_index] = location_now[xyz_index][leg_index] - DeltLocationMax                
+                if abs(diff) > abs(self.movements_now.DeltLegsM[xyz_index][leg_index]):
+                    loaction_gradient[xyz_index][leg_index] = location_now[xyz_index][leg_index] + self.movements_now.DeltLegsM[xyz_index][leg_index]               
                 else :
                     loaction_gradient[xyz_index][leg_index] = location_target[xyz_index][leg_index]
                     if self.legslocation_done_index[xyz_index][leg_index] != 1:
@@ -606,10 +639,8 @@ class MovementScheme:
         #speed gradient
         for xy_index in range(2):
                 diff = speed_target[xy_index] - speed_now[xy_index]
-                if diff > DeltSpeedMax:
-                    speed_gradient[xy_index] = speed_now[xy_index] + DeltSpeedMax
-                elif diff < -DeltSpeedMax:
-                    speed_gradient[xy_index] = speed_now[xy_index] - DeltSpeedMax                
+                if abs(diff) > abs(self.movements_now.DeltSpeedM[xy_index]):
+                    speed_gradient[xy_index] = speed_now[xy_index] + self.movements_now.DeltSpeedM[xy_index]               
                 else :
                     speed_gradient[xy_index] = speed_target[xy_index]
                     if self.speed_done_index[xy_index] != 1 :
@@ -637,10 +668,8 @@ class MovementScheme:
         #Attitude gradient
         for rpy_index in range(3):
                 diff = attitude_target[rpy_index] - attitude_now[rpy_index]
-                if diff > DeltAttitudeMax:
-                    attitude_gradient[rpy_index] = attitude_now[rpy_index] + DeltAttitudeMax
-                elif diff < -DeltAttitudeMax:
-                    attitude_gradient[rpy_index] = attitude_now[rpy_index] - DeltAttitudeMax                
+                if abs(diff) > abs(self.movements_now.DeltAttitudeM[rpy_index]):
+                    attitude_gradient[rpy_index] = attitude_now[rpy_index] + self.movements_now.DeltAttitudeM[rpy_index]
                 else :
                     attitude_gradient[rpy_index] = attitude_target[rpy_index]
                     if self.attitude_done_index[rpy_index] != 1 :
@@ -652,30 +681,18 @@ class MovementScheme:
             self.attitude_gradient_done = True
 
         return attitude_gradient,self.attitude_gradient_done
-        
-        
-    def updateMovemenScheme(self):
-        """this function used to update the value of three parts
-        """
-        # run movement
-        self.movements_now.runMovementSequence()
-
-        # legs movement
+     
+    def updateLegsScheme(self):
+        self.movements_now.runLegsSequence()
         self.legs_location_now = self.movements_now.getLegsLocationOutput('normal')
-        # speed movement
-        self.speed_now = self.movements_now.getSpeedOutput('normal')
-        # attitude movement
+         
+    def updateAttitudeScheme(self):
+        self.movements_now.runAttitudeSequence()
         self.attitude_now = self.movements_now.getAttitudeOutput('normal')
-        
-        for rpy in range(3):
-
-            #limite attitude angle
-            if self.attitude_now[rpy] < AttitudeMinMax[rpy][0]:
-                self.attitude_now[rpy] = AttitudeMinMax[rpy][0]
-            elif self.attitude_now[rpy] > AttitudeMinMax[rpy][1]:
-                self.attitude_now[rpy] = AttitudeMinMax[rpy][1]
-
-        return  True
+         
+    def updateSpeedScheme(self):
+        self.movements_now.runSpeedSequence()
+        self.speed_now = self.movements_now.getSpeedOutput('normal')
 
     def runMovementScheme(self):
         """run the movement in movementlib

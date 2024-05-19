@@ -42,6 +42,10 @@ class Controller:
                 self.dance_active_state = False
         return True
 
+    def pseudo_dance_active(self, command):
+        if command.pseudo_dance_event == True:
+            self.dance_active_state = True
+
     def step_gait(self, state, command):
         """Calculate the desired foot locations for the next timestep
 
@@ -90,6 +94,7 @@ class Controller:
 
         disp.show_state(state.behavior_state)
         self.dance_active(command)
+        self.pseudo_dance_active(command)
 
         if state.behavior_state == BehaviorState.TROT:
             state.foot_locations, contact_modes = self.step_gait(
