@@ -20,10 +20,10 @@ class Controller:
         inverse_kinematics,
     ):
         self.config = config
-        self.dance_active_state = False
 
         self.smoothed_yaw = 0.0  # for REST mode only
         self.inverse_kinematics = inverse_kinematics
+        self.dance_active_state = False
 
         self.contact_modes = np.zeros(4)
         self.gait_controller = GaitController(self.config)
@@ -187,11 +187,21 @@ class Controller:
                     euler2mat(
                         attitude[0],
                         attitude[1],
-                        attitude[2],
+                        self.smoothed_yaw,
                     )
                     @ state.foot_locations
                 )
 
+
+ # Construct foot rotation matrix to compensate for body tilt
+            (roll, pitch, yaw) = quat2euler(state.quat_orientation)
+            correction_factor = 0.8
+            max_tilt = 0.4
+            roll_compensation = correction_factor * np.clip(-roll, -max_tilt, max_tilt)
+            pitch_compensation = correction_factor * np.clip(-pitch, -max_tilt, max_tilt)
+            rmat = euler2mat(roll_compensation, pitch_compensation, 0)
+
+            rotated_foot_locations = rmat.T @ rotated_foot_locations
 
             state.joint_angles = self.inverse_kinematics(
                 rotated_foot_locations, self.config
