@@ -14,11 +14,14 @@
 # limitations under the License.
 #
 # Description: FPC(Flexible Programmable Choreography) APIs
+#              There are 3 level APIs
+#                 Level 1(for beginners): Simple APIs without input parameters
+#                 Level 2(for makers): APIs with input parameters
+#                 Level 3(for beyond): Samples delicately control the foot locations, move speed and attitudes at each execution times
 #
 import numpy as np
 from src.MovementScheme import Movements 
 
-"please comfirm the size of legs,speed,attitude all same in youe design movements"
 class MovementGroups:
 
     def __init__(self):
@@ -47,6 +50,8 @@ class MovementGroups:
         else:
             num_modified = value
         return num_modified
+
+########## The level1 simple APIs without input parameters ###########
  
     def stop(self, time = 1):
         """Return to the default natural standing position
@@ -67,214 +72,6 @@ class MovementGroups:
         dance_scheme.setAllSequence(dance_all_legs,dance_speed,dance_attitude)
         self.MovementLib.append(dance_scheme)      # append dance
         return self.MovementLib
-        
-    def head_move(self, pitch_deg = 0, yaw_deg = 0, time_uni = 1, time_acc = 1):
-        """Turn the head of the robot to a certain degree
-        Args: 
-            Pitch_deg: the angle you want the robot's head to look up or down 
-                        e.g. 20 ----> the pupper will lookup 20 degrees from pupper's own perspective
-            yaw_deg: the angle you want the robot's head to look left or right 
-                        e.g. 20 ----> the pupper will look right 20 degrees from pupper's own perspective
-            time_acc: how long it takes to reach the desired angle (unit: second)
-            time_uni: how long pupper will keep still at the desired pose (unit: second)
-        
-        Return:
-            Append the head turning movement into the MovementLib
-        """ 
-        if time_uni <= 0:
-            time_uni = self.dt
-        if time_acc <=0:
-            time_acc = self.dt
-        interval_uni = int(time_uni / self.dt)
-        interval_acc = int(time_acc / self.dt)
-        modified_pitch = self.cap_limit(self.pitchcap, -self.pitchcap, pitch_deg)
-        modified_yaw = self.cap_limit(self.yawcap, -self.yawcap, yaw_deg)
-        dance_scheme = Movements('head_move')
-        dance_all_legs = self.default_stand
-        dance_speed = [[0,0,0]]        # speed_x, speed_y, no_use
-        dance_attitude = [[0,pitch_deg,yaw_deg],[0,pitch_deg,yaw_deg]]     # roll, pitch, yaw degree
-        dance_scheme.setInterpolationNumber(interval_uni)
-        dance_scheme.setTransitionTic(interval_acc)
-        dance_scheme.setAllSequence(dance_all_legs,dance_speed,dance_attitude)
-        self.MovementLib.append(dance_scheme)      # append dance
-        return self.MovementLib
-        
-    def body_row(self, row_deg = 0, time_uni = 1, time_acc = 1):
-        """Set the robot to tilt its body to a certain angle
-        Args:
-            row_deg: the desired angle you want the robot to tilt 
-                    e.g. 10 ----> the pupper will tilt 10 degrees counterclockwise at it's own perspective
-            time_acc: how long it takes to reach the desired angle (unit: second)
-            time_uni: how long pupper will keep at the desired pose (unit: second)
-        Return:
-            Append the body row movement into the MovementLib
-        """
-        if time_uni <= 0:
-            time_uni = self.dt
-        if time_acc <=0:
-            time_acc = self.dt
-        interval_uni = int(time_uni / self.dt)
-        interval_acc = int(time_acc / self.dt)
-        modified_row = self.cap_limit(self.rowcap, -self.rowcap, row_deg)
-        dance_scheme = Movements('body_row')
-        dance_all_legs = self.default_stand
-        dance_speed = [[0,0,0]]        # speed_x, speed_y, no_use
-        dance_attitude = [[modified_row,0,0],[modified_row,0,0]]     # roll, pitch, yaw degree
-        dance_scheme.setInterpolationNumber(interval_uni)
-        dance_scheme.setTransitionTic(interval_acc)
-        dance_scheme.setAllSequence(dance_all_legs,dance_speed,dance_attitude)
-        self.MovementLib.append(dance_scheme)      # append dance
-        return self.MovementLib
-    
-    def gait_uni(self, v_x = 0, v_y = 0, time_uni = 1, time_acc = 1):
-        """Let robot gait uniformly for a given time
-        Args:
-            v_x: the desired forward/back velocity (unit: m/s)
-            v_y: the desired left/right velocity (unit: m/s)
-            time_acc: how long it takes to accelerate from the previous speed to defined speed in this movement (unit: second)
-            time_uni: how long the uniform movement will continue (unit second)
-        Return:
-            Append the uniform gait movement into the MovementLib
-        """
-        if time_uni <= 0:
-            time_uni = self.dt
-        if time_acc <=0:
-            time_acc = self.dt
-        interval_uni = int(time_uni / self.dt)
-        interval_acc = int(time_acc / self.dt)
-        modified_vx = self.cap_limit(self.vxcap, -self.vxcap, v_x)
-        modified_vy = self.cap_limit(self.vycap, -self.vycap, v_y)
-        dance_scheme = Movements('gait_uni')
-        dance_all_legs = self.default_stand
-        dance_speed = [[modified_vx,modified_vy,0],[modified_vx,modified_vy,0]]        # speed_x, speed_y, no_use
-        dance_attitude = [[0,0,0]]     # roll, pitch, yaw degree
-        dance_scheme.setInterpolationNumber(interval_uni)
-        dance_scheme.setTransitionTic(interval_acc)
-        dance_scheme.setAllSequence(dance_all_legs,dance_speed,dance_attitude)
-        self.MovementLib.append(dance_scheme)      # append dance
-        return self.MovementLib   
-        
-    def height_move(self, ht = 0, time_uni = 1, time_acc = 1):
-        """Let robot descend or ascend a given height
-        Args:
-            ht: the distance you want the robot to ascend or descend 
-                e.g. ht = 0.02 ----> let pupper ascend 0.02m
-            time_acc: how long it takes to ascend or descend (unit: second)
-            time_uni: how long pupper will hold the position after ascending or descending (unit:second)
-        Return:
-            Append the height movement into the MovementLib
-        """
-        if time_uni <= 0:
-            time_uni = self.dt
-        if time_acc <=0:
-            time_acc = self.dt
-        interval_uni = int(time_uni / self.dt)
-        interval_acc = int(time_acc / self.dt)
-        modified_ht = self.cap_limit(self.highcap, -self.lowcap, ht)
-        dance_scheme = Movements('height_move')
-        dance_all_legs = [
-            [[ 0.06,-0.05,-0.07-modified_ht],[ 0.06,-0.05,-0.07-modified_ht]],
-            [[ 0.06, 0.05,-0.07-modified_ht],[ 0.06, 0.05,-0.07-modified_ht]],
-            [[-0.06,-0.05,-0.07-modified_ht],[-0.06,-0.05,-0.07-modified_ht]],
-            [[-0.06, 0.05,-0.07-modified_ht],[-0.06, 0.05,-0.07-modified_ht]]
-        ]
-        dance_speed = [[0,0,0]]        # speed_x, speed_y, no_use
-        dance_attitude = [[0,0,0]]     # roll, pitch, yaw degree
-        dance_scheme.setTransitionTic(interval_acc)
-        dance_scheme.setInterpolationNumber(interval_uni) 
-        dance_scheme.setAllSequence(dance_all_legs,dance_speed,dance_attitude)
-        self.MovementLib.append(dance_scheme)      # append dance
-        return self.MovementLib
-        
-    def foreleg_lift(self, leg_index = 'left', ht = 0.01, time_uni = 1, time_acc = 1):
-        """lift one foreleg by a certain height
-        Args:
-            ht: the height you want the leg to lift by 
-                e.g. ht = 0.02 ----> lift up the leg by 0.02m
-            leg_index: 'left' or 'right', indicating which leg to lift
-            time_acc: how long it takes to lift the leg (unit: second)
-            time_uni: how long pupper will keep still at the leg lifted pose (unit: second)
-        Return: 
-            Append the liftup movement into the MovementLib
-        """
-        if time_uni <= 0:
-            time_uni = self.dt
-        if time_acc <=0:
-            time_acc = self.dt
-        interval_uni = int(time_uni / self.dt)
-        interval_acc = int(time_acc / self.dt)
-        modified_ht = self.cap_limit(self.legliftcap, 0, ht)
-        dance_scheme = Movements('foreleg')
-        dance_all_legs = []
-        leg_1 = [
-            [[0.12,-0.06,-0.07+modified_ht],[0.12,-0.06,-0.07+modified_ht]],
-            [[0.06, 0.01,-0.07],[0.06, 0.01,-0.07]],
-            [[-0.06,-0.05,-0.09],[-0.06,-0.05,-0.09]],
-            [[-0.06, 0.05,-0.07],[-0.06, 0.05,-0.07]]
-        ]
-        leg_2 = [
-            [[0.06,-0.01,-0.07],[0.06,-0.01,-0.07]],
-            [[0.12, 0.06,-0.07+modified_ht],[0.12, 0.06,-0.07+modified_ht]],
-            [[-0.06,-0.05,-0.07],[-0.06,-0.05,-0.07]],
-            [[-0.06, 0.05,-0.09],[-0.06, 0.05,-0.09]]
-        ]
-        if leg_index == 'right':
-            dance_all_legs = leg_1
-        elif leg_index == 'left':
-            dance_all_legs = leg_2
-        dance_speed = [[0,0,0]]        # speed_x, speed_y, no_use
-        dance_attitude = [[0,0,0]]     # roll, pitch, yaw degree
-        dance_scheme.setTransitionTic(interval_acc)
-        dance_scheme.setInterpolationNumber(interval_uni)
-        dance_scheme.setAllSequence(dance_all_legs,dance_speed,dance_attitude)
-        self.MovementLib.append(dance_scheme)      # append dance
-        return self.MovementLib
-        
-    def backleg_lift(self, leg_index = 'left', ht = 0.01, time_uni = 1, time_acc = 1):
-        """lift one backleg by a certain height
-        Args:
-            ht: the height you wan the leg to lift by 
-                e.g. ht = 0.02 ----> lift up the leg by 0.02m
-            leg_index: 'left' or 'right', indicating which leg to lift
-            time_acc: how long it takes to lift the leg unit: second (unit: second)
-            time_uni: how long pupper will keep still at the leg lifted pose (unit:second)
-        Return: 
-            Append the liftup movement into the MovementLib
-        """
-        if time_uni <= 0:
-            time_uni = self.dt
-        if time_acc <=0:
-            time_acc = self.dt
-        interval_uni = int(time_uni / self.dt)
-        interval_acc = int(time_acc / self.dt)
-        modified_ht = self.cap_limit(self.legliftcap, 0, ht)
-        dance_scheme = Movements('backleg')
-        dance_all_legs = []
-        leg_1 = [
-            [[0.06,-0.05,-0.09],[0.06,-0.05,-0.09]],
-            [[0.06, 0.05,-0.07],[0.06, 0.05,-0.07]],
-            [[-0.08,-0.08,-0.07+modified_ht],[-0.08,-0.08,-0.07+modified_ht]],
-            [[-0.06, 0.01,-0.07],[-0.06, 0.01,-0.07]]
-        ]
-        leg_2 = [
-            [[0.06,-0.05,-0.07],[0.06,-0.05,-0.07]],
-            [[0.06, 0.05,-0.09],[0.06, 0.05,-0.09]],
-            [[-0.06,-0.01,-0.07],[-0.06,-0.01,-0.07]],
-            [[-0.08, 0.08,-0.07+modified_ht],[-0.08, 0.08,-0.07+modified_ht]]
-        ]
-        if leg_index == 'right':
-            dance_all_legs = leg_1
-        elif leg_index == 'left':
-            dance_all_legs = leg_2
-        dance_speed = [[0,0,0]]        # speed_x, speed_y, no_use
-        dance_attitude = [[0,0,0]]     # roll, pitch, yaw degree
-        dance_scheme.setTransitionTic(interval_acc)
-        dance_scheme.setInterpolationNumber(interval_uni)
-        dance_scheme.setAllSequence(dance_all_legs,dance_speed,dance_attitude)
-        self.MovementLib.append(dance_scheme)      # append dance
-        return self.MovementLib
-        
- ########## The following APIs are simple ones without input parameters ###########
  
     def look_up(self):  
         """Set robot look up 20deg, you can change the deg parameter in this function.
@@ -484,43 +281,347 @@ class MovementGroups:
         self.MovementLib.append(dance_scheme)      # append dance
         return self.MovementLib
         
-      
-"""  
-    #multiple move in one movement example1
-    #it is a series of movement,keep down first then back to default stand ,move forward ,finally stop  
-    def down_trot(self):    
-        dance_scheme = Movements('down_trot')
+ #----------- The simple APIs without input parameters END -----------#
 
-        dance_all_legs = []
-        dance_all_legs.append([[ 0.06,-0.05,-0.07],[ 0.06,-0.05,-0.04],[ 0.06,-0.05,-0.07],[ 0.06,-0.05,-0.07],[ 0.06,-0.05,-0.07]]) #leg1
-        dance_all_legs.append([[ 0.06, 0.05,-0.07],[ 0.06, 0.05,-0.04],[ 0.06, 0.05,-0.07],[ 0.06, 0.05,-0.07],[ 0.06, 0.05,-0.07]]) #leg2
-        dance_all_legs.append([[-0.06,-0.05,-0.07],[-0.06,-0.05,-0.04],[-0.06,-0.05,-0.07],[-0.06,-0.05,-0.07],[-0.06,-0.05,-0.07]]) #leg3
-        dance_all_legs.append([[-0.06, 0.05,-0.07],[-0.06, 0.05,-0.04],[-0.06, 0.05,-0.07],[-0.06, 0.05,-0.07],[-0.06, 0.05,-0.07]]) #leg4
 
-        dance_speed = [[0,0,0],[0,0,0],[0,0,0],[0.15,0,0],[0,0,0]]    # speed_x, speed_y, no_use
 
-        dance_attitude = [[0,0,0],[10,0,0],[0,0,0],[0,0,0],[0,0,0]]   # roll, pitch, yaw degree
+ ########## The level2 APIs with input parameters ###########
+        
+    def head_move(self, pitch_deg = 0, yaw_deg = 0, time_uni = 1, time_acc = 1):
+        """Turn the head of the robot to a certain degree
+        Args: 
+            Pitch_deg: the angle you want the robot's head to look up or down 
+                        e.g. 20 ----> the pupper will lookup 20 degrees from pupper's own perspective
+            yaw_deg: the angle you want the robot's head to look left or right 
+                        e.g. 20 ----> the pupper will look right 20 degrees from pupper's own perspective
+            time_acc: how long it takes to reach the desired angle (unit: second)
+            time_uni: how long pupper will keep still at the desired pose (unit: second)
+        
+        Return:
+            Append the head turning movement into the MovementLib
+        """ 
+        if time_uni <= 0:
+            time_uni = self.dt
+        if time_acc <=0:
+            time_acc = self.dt
+        interval_uni = int(time_uni / self.dt)
+        interval_acc = int(time_acc / self.dt)
+        modified_pitch = self.cap_limit(self.pitchcap, -self.pitchcap, pitch_deg)
+        modified_yaw = self.cap_limit(self.yawcap, -self.yawcap, yaw_deg)
+        dance_scheme = Movements('head_move')
+        dance_all_legs = self.default_stand
+        dance_speed = [[0,0,0]]        # speed_x, speed_y, no_use
+        dance_attitude = [[0,pitch_deg,yaw_deg],[0,pitch_deg,yaw_deg]]     # roll, pitch, yaw degree
+        dance_scheme.setInterpolationNumber(interval_uni)
+        dance_scheme.setTransitionTic(interval_acc)
         dance_scheme.setAllSequence(dance_all_legs,dance_speed,dance_attitude)
-        self.MovementLib.append(dance_scheme)
-
+        self.MovementLib.append(dance_scheme)      # append dance
+        return self.MovementLib
+        
+    def body_row(self, row_deg = 0, time_uni = 1, time_acc = 1):
+        """Set the robot to tilt its body to a certain angle
+        Args:
+            row_deg: the desired angle you want the robot to tilt 
+                    e.g. 10 ----> the pupper will tilt 10 degrees counterclockwise at it's own perspective
+            time_acc: how long it takes to reach the desired angle (unit: second)
+            time_uni: how long pupper will keep at the desired pose (unit: second)
+        Return:
+            Append the body row movement into the MovementLib
+        """
+        if time_uni <= 0:
+            time_uni = self.dt
+        if time_acc <=0:
+            time_acc = self.dt
+        interval_uni = int(time_uni / self.dt)
+        interval_acc = int(time_acc / self.dt)
+        modified_row = self.cap_limit(self.rowcap, -self.rowcap, row_deg)
+        dance_scheme = Movements('body_row')
+        dance_all_legs = self.default_stand
+        dance_speed = [[0,0,0]]        # speed_x, speed_y, no_use
+        dance_attitude = [[modified_row,0,0],[modified_row,0,0]]     # roll, pitch, yaw degree
+        dance_scheme.setInterpolationNumber(interval_uni)
+        dance_scheme.setTransitionTic(interval_acc)
+        dance_scheme.setAllSequence(dance_all_legs,dance_speed,dance_attitude)
+        self.MovementLib.append(dance_scheme)      # append dance
+        return self.MovementLib
+    
+    def gait_uni(self, v_x = 0, v_y = 0, time_uni = 1, time_acc = 1):
+        """Let robot gait uniformly for a given time
+        Args:
+            v_x: the desired forward/back velocity (unit: m/s)
+            v_y: the desired left/right velocity (unit: m/s)
+            time_acc: how long it takes to accelerate from the previous speed to defined speed in this movement (unit: second)
+            time_uni: how long the uniform movement will continue (unit second)
+        Return:
+            Append the uniform gait movement into the MovementLib
+        """
+        if time_uni <= 0:
+            time_uni = self.dt
+        if time_acc <=0:
+            time_acc = self.dt
+        interval_uni = int(time_uni / self.dt)
+        interval_acc = int(time_acc / self.dt)
+        modified_vx = self.cap_limit(self.vxcap, -self.vxcap, v_x)
+        modified_vy = self.cap_limit(self.vycap, -self.vycap, v_y)
+        dance_scheme = Movements('gait_uni')
+        dance_all_legs = self.default_stand
+        dance_speed = [[modified_vx,modified_vy,0],[modified_vx,modified_vy,0]]        # speed_x, speed_y, no_use
+        dance_attitude = [[0,0,0]]     # roll, pitch, yaw degree
+        dance_scheme.setInterpolationNumber(interval_uni)
+        dance_scheme.setTransitionTic(interval_acc)
+        dance_scheme.setAllSequence(dance_all_legs,dance_speed,dance_attitude)
+        self.MovementLib.append(dance_scheme)      # append dance
+        return self.MovementLib   
+        
+    def height_move(self, ht = 0, time_uni = 1, time_acc = 1):
+        """Let robot descend or ascend a given height
+        Args:
+            ht: the distance you want the robot to ascend or descend 
+                e.g. ht = 0.02 ----> let pupper ascend 0.02m
+            time_acc: how long it takes to ascend or descend (unit: second)
+            time_uni: how long pupper will hold the position after ascending or descending (unit:second)
+        Return:
+            Append the height movement into the MovementLib
+        """
+        if time_uni <= 0:
+            time_uni = self.dt
+        if time_acc <=0:
+            time_acc = self.dt
+        interval_uni = int(time_uni / self.dt)
+        interval_acc = int(time_acc / self.dt)
+        modified_ht = self.cap_limit(self.highcap, -self.lowcap, ht)
+        dance_scheme = Movements('height_move')
+        dance_all_legs = [
+            [[ 0.06,-0.05,-0.07-modified_ht],[ 0.06,-0.05,-0.07-modified_ht]],
+            [[ 0.06, 0.05,-0.07-modified_ht],[ 0.06, 0.05,-0.07-modified_ht]],
+            [[-0.06,-0.05,-0.07-modified_ht],[-0.06,-0.05,-0.07-modified_ht]],
+            [[-0.06, 0.05,-0.07-modified_ht],[-0.06, 0.05,-0.07-modified_ht]]
+        ]
+        dance_speed = [[0,0,0]]        # speed_x, speed_y, no_use
+        dance_attitude = [[0,0,0]]     # roll, pitch, yaw degree
+        dance_scheme.setTransitionTic(interval_acc)
+        dance_scheme.setInterpolationNumber(interval_uni) 
+        dance_scheme.setAllSequence(dance_all_legs,dance_speed,dance_attitude)
+        self.MovementLib.append(dance_scheme)      # append dance
+        return self.MovementLib
+        
+    def foreleg_lift(self, leg_index = 'left', ht = 0.01, time_uni = 1, time_acc = 1):
+        """lift one foreleg by a certain height
+        Args:
+            ht: the height you want the leg to lift by 
+                e.g. ht = 0.02 ----> lift up the leg by 0.02m
+            leg_index: 'left' or 'right', indicating which leg to lift
+            time_acc: how long it takes to lift the leg (unit: second)
+            time_uni: how long pupper will keep still at the leg lifted pose (unit: second)
+        Return: 
+            Append the liftup movement into the MovementLib
+        """
+        if time_uni <= 0:
+            time_uni = self.dt
+        if time_acc <=0:
+            time_acc = self.dt
+        interval_uni = int(time_uni / self.dt)
+        interval_acc = int(time_acc / self.dt)
+        modified_ht = self.cap_limit(self.legliftcap, 0, ht)
+        dance_scheme = Movements('foreleg')
+        dance_all_legs = []
+        leg_1 = [
+            [[0.12,-0.06,-0.07+modified_ht],[0.12,-0.06,-0.07+modified_ht]],
+            [[0.06, 0.01,-0.07],[0.06, 0.01,-0.07]],
+            [[-0.06,-0.05,-0.09],[-0.06,-0.05,-0.09]],
+            [[-0.06, 0.05,-0.07],[-0.06, 0.05,-0.07]]
+        ]
+        leg_2 = [
+            [[0.06,-0.01,-0.07],[0.06,-0.01,-0.07]],
+            [[0.12, 0.06,-0.07+modified_ht],[0.12, 0.06,-0.07+modified_ht]],
+            [[-0.06,-0.05,-0.07],[-0.06,-0.05,-0.07]],
+            [[-0.06, 0.05,-0.09],[-0.06, 0.05,-0.09]]
+        ]
+        if leg_index == 'right':
+            dance_all_legs = leg_1
+        elif leg_index == 'left':
+            dance_all_legs = leg_2
+        dance_speed = [[0,0,0]]        # speed_x, speed_y, no_use
+        dance_attitude = [[0,0,0]]     # roll, pitch, yaw degree
+        dance_scheme.setTransitionTic(interval_acc)
+        dance_scheme.setInterpolationNumber(interval_uni)
+        dance_scheme.setAllSequence(dance_all_legs,dance_speed,dance_attitude)
+        self.MovementLib.append(dance_scheme)      # append dance
+        return self.MovementLib
+        
+    def backleg_lift(self, leg_index = 'left', ht = 0.01, time_uni = 1, time_acc = 1):
+        """lift one backleg by a certain height
+        Args:
+            ht: the height you wan the leg to lift by 
+                e.g. ht = 0.02 ----> lift up the leg by 0.02m
+            leg_index: 'left' or 'right', indicating which leg to lift
+            time_acc: how long it takes to lift the leg unit: second (unit: second)
+            time_uni: how long pupper will keep still at the leg lifted pose (unit:second)
+        Return: 
+            Append the liftup movement into the MovementLib
+        """
+        if time_uni <= 0:
+            time_uni = self.dt
+        if time_acc <=0:
+            time_acc = self.dt
+        interval_uni = int(time_uni / self.dt)
+        interval_acc = int(time_acc / self.dt)
+        modified_ht = self.cap_limit(self.legliftcap, 0, ht)
+        dance_scheme = Movements('backleg')
+        dance_all_legs = []
+        leg_1 = [
+            [[0.06,-0.05,-0.09],[0.06,-0.05,-0.09]],
+            [[0.06, 0.05,-0.07],[0.06, 0.05,-0.07]],
+            [[-0.08,-0.08,-0.07+modified_ht],[-0.08,-0.08,-0.07+modified_ht]],
+            [[-0.06, 0.01,-0.07],[-0.06, 0.01,-0.07]]
+        ]
+        leg_2 = [
+            [[0.06,-0.05,-0.07],[0.06,-0.05,-0.07]],
+            [[0.06, 0.05,-0.09],[0.06, 0.05,-0.09]],
+            [[-0.06,-0.01,-0.07],[-0.06,-0.01,-0.07]],
+            [[-0.08, 0.08,-0.07+modified_ht],[-0.08, 0.08,-0.07+modified_ht]]
+        ]
+        if leg_index == 'right':
+            dance_all_legs = leg_1
+        elif leg_index == 'left':
+            dance_all_legs = leg_2
+        dance_speed = [[0,0,0]]        # speed_x, speed_y, no_use
+        dance_attitude = [[0,0,0]]     # roll, pitch, yaw degree
+        dance_scheme.setTransitionTic(interval_acc)
+        dance_scheme.setInterpolationNumber(interval_uni)
+        dance_scheme.setAllSequence(dance_all_legs,dance_speed,dance_attitude)
+        self.MovementLib.append(dance_scheme)      # append dance
         return self.MovementLib
 
-    #multiple move in one movement example2  
-    #it is a series of movement,keep up first then back to default stand ,move forward ,finally stop
-    def up_trot(self):    
-        dance_scheme = Movements('up_trot')
+#----------- The level2 APIs with input parameters END -----------#
+
+
+
+
+##### The level3 samples to DIY complicated movement   #######
+
+    """ These Samples delicately control the foot locations, move speed and attitudes at each execution times,
+    enabling more complicated movement based on your demands. By defaut, no arguments are needed, but you can 
+    modify them on your own."""
+
+    def body_cycle(self):
+        """ This movement enables the pupper to draw a circle with it's body center in the x-y plane while keeping 
+        it's origional orientation of the body.
+        Params:
+            Radius: the radius of the circle trajectory (unit: meter)
+        """
+        dance_scheme = Movements('body_cycle')
+        Radius = 0.04
 
         dance_all_legs = []
-        dance_all_legs.append([[ 0.06,-0.05,-0.07],[ 0.06,-0.05,-0.10],[ 0.06,-0.05,-0.07],[ 0.06,-0.05,-0.07],[ 0.06,-0.05,-0.07]])# leg1
-        dance_all_legs.append([[ 0.06, 0.05,-0.07],[ 0.06, 0.05,-0.10],[ 0.06, 0.05,-0.07],[ 0.06, 0.05,-0.07],[ 0.06, 0.05,-0.07]])# leg2
-        dance_all_legs.append([[-0.06,-0.05,-0.07],[-0.06,-0.05,-0.10],[-0.06,-0.05,-0.07],[-0.06,-0.05,-0.07],[-0.06,-0.05,-0.07]])# leg3
-        dance_all_legs.append([[-0.06, 0.05,-0.07],[-0.06, 0.05,-0.10],[-0.06, 0.05,-0.07],[-0.06, 0.05,-0.07],[-0.06, 0.05,-0.07]])# leg4
+        dance_all_legs.append([
+                               [ 0.06+np.cos(1*22.5*np.pi/180)*Radius,-0.05+np.sin(1*22.5*np.pi/180)*Radius,-0.07],
+                               [ 0.06+np.cos(2*22.5*np.pi/180)*Radius,-0.05+np.sin(2*22.5*np.pi/180)*Radius,-0.07],
+                               [ 0.06+np.cos(3*22.5*np.pi/180)*Radius,-0.05+np.sin(3*22.5*np.pi/180)*Radius,-0.07],
+                               [ 0.06+np.cos(4*22.5*np.pi/180)*Radius,-0.05+np.sin(4*22.5*np.pi/180)*Radius,-0.07],
+                               [ 0.06+np.cos(5*22.5*np.pi/180)*Radius,-0.05+np.sin(5*22.5*np.pi/180)*Radius,-0.07],
+                               [ 0.06+np.cos(6*22.5*np.pi/180)*Radius,-0.05+np.sin(6*22.5*np.pi/180)*Radius,-0.07],
+                               [ 0.06+np.cos(7*22.5*np.pi/180)*Radius,-0.05+np.sin(7*22.5*np.pi/180)*Radius,-0.07],
+                               [ 0.06+np.cos(8*22.5*np.pi/180)*Radius,-0.05+np.sin(8*22.5*np.pi/180)*Radius,-0.07],
+                               [ 0.06+np.cos(9*22.5*np.pi/180)*Radius,-0.05+np.sin(9*22.5*np.pi/180)*Radius,-0.07],
+                               [ 0.06+np.cos(10*22.5*np.pi/180)*Radius,-0.05+np.sin(10*22.5*np.pi/180)*Radius,-0.07],
+                               [ 0.06+np.cos(11*22.5*np.pi/180)*Radius,-0.05+np.sin(11*22.5*np.pi/180)*Radius,-0.07],
+                               [ 0.06+np.cos(12*22.5*np.pi/180)*Radius,-0.05+np.sin(12*22.5*np.pi/180)*Radius,-0.07],
+                               [ 0.06+np.cos(13*22.5*np.pi/180)*Radius,-0.05+np.sin(13*22.5*np.pi/180)*Radius,-0.07],
+                               [ 0.06+np.cos(14*22.5*np.pi/180)*Radius,-0.05+np.sin(14*22.5*np.pi/180)*Radius,-0.07],
+                               [ 0.06+np.cos(15*22.5*np.pi/180)*Radius,-0.05+np.sin(15*22.5*np.pi/180)*Radius,-0.07],
+                               [ 0.06+np.cos(16*22.5*np.pi/180)*Radius,-0.05+np.sin(16*22.5*np.pi/180)*Radius,-0.07],
+                               ])# leg1(front right) foot locations
+        
+        dance_all_legs.append([
+                               [ 0.06+np.cos(1*22.5*np.pi/180)*Radius,0.05+np.sin(1*22.5*np.pi/180)*Radius,-0.07],
+                               [ 0.06+np.cos(2*22.5*np.pi/180)*Radius,0.05+np.sin(2*22.5*np.pi/180)*Radius,-0.07],
+                               [ 0.06+np.cos(3*22.5*np.pi/180)*Radius,0.05+np.sin(3*22.5*np.pi/180)*Radius,-0.07],
+                               [ 0.06+np.cos(4*22.5*np.pi/180)*Radius,0.05+np.sin(4*22.5*np.pi/180)*Radius,-0.07],
+                               [ 0.06+np.cos(5*22.5*np.pi/180)*Radius,0.05+np.sin(5*22.5*np.pi/180)*Radius,-0.07],
+                               [ 0.06+np.cos(6*22.5*np.pi/180)*Radius,0.05+np.sin(6*22.5*np.pi/180)*Radius,-0.07],
+                               [ 0.06+np.cos(7*22.5*np.pi/180)*Radius,0.05+np.sin(7*22.5*np.pi/180)*Radius,-0.07],
+                               [ 0.06+np.cos(8*22.5*np.pi/180)*Radius,0.05+np.sin(8*22.5*np.pi/180)*Radius,-0.07],
+                               [ 0.06+np.cos(9*22.5*np.pi/180)*Radius,0.05+np.sin(9*22.5*np.pi/180)*Radius,-0.07],
+                               [ 0.06+np.cos(10*22.5*np.pi/180)*Radius,0.05+np.sin(10*22.5*np.pi/180)*Radius,-0.07],
+                               [ 0.06+np.cos(11*22.5*np.pi/180)*Radius,0.05+np.sin(11*22.5*np.pi/180)*Radius,-0.07],
+                               [ 0.06+np.cos(12*22.5*np.pi/180)*Radius,0.05+np.sin(12*22.5*np.pi/180)*Radius,-0.07],
+                               [ 0.06+np.cos(13*22.5*np.pi/180)*Radius,0.05+np.sin(13*22.5*np.pi/180)*Radius,-0.07],
+                               [ 0.06+np.cos(14*22.5*np.pi/180)*Radius,0.05+np.sin(14*22.5*np.pi/180)*Radius,-0.07],
+                               [ 0.06+np.cos(15*22.5*np.pi/180)*Radius,0.05+np.sin(15*22.5*np.pi/180)*Radius,-0.07],
+                               [ 0.06+np.cos(16*22.5*np.pi/180)*Radius,0.05+np.sin(16*22.5*np.pi/180)*Radius,-0.07],
+                               ])# leg2(front left) foot locations
+        
+        dance_all_legs.append([
+                               [ -0.06+np.cos(1*22.5*np.pi/180)*Radius,-0.05+np.sin(1*22.5*np.pi/180)*Radius,-0.07],
+                               [ -0.06+np.cos(2*22.5*np.pi/180)*Radius,-0.05+np.sin(2*22.5*np.pi/180)*Radius,-0.07],
+                               [ -0.06+np.cos(3*22.5*np.pi/180)*Radius,-0.05+np.sin(3*22.5*np.pi/180)*Radius,-0.07],
+                               [ -0.06+np.cos(4*22.5*np.pi/180)*Radius,-0.05+np.sin(4*22.5*np.pi/180)*Radius,-0.07],
+                               [ -0.06+np.cos(5*22.5*np.pi/180)*Radius,-0.05+np.sin(5*22.5*np.pi/180)*Radius,-0.07],
+                               [ -0.06+np.cos(6*22.5*np.pi/180)*Radius,-0.05+np.sin(6*22.5*np.pi/180)*Radius,-0.07],
+                               [ -0.06+np.cos(7*22.5*np.pi/180)*Radius,-0.05+np.sin(7*22.5*np.pi/180)*Radius,-0.07],
+                               [ -0.06+np.cos(8*22.5*np.pi/180)*Radius,-0.05+np.sin(8*22.5*np.pi/180)*Radius,-0.07],
+                               [ -0.06+np.cos(9*22.5*np.pi/180)*Radius,-0.05+np.sin(9*22.5*np.pi/180)*Radius,-0.07],
+                               [ -0.06+np.cos(10*22.5*np.pi/180)*Radius,-0.05+np.sin(10*22.5*np.pi/180)*Radius,-0.07],
+                               [ -0.06+np.cos(11*22.5*np.pi/180)*Radius,-0.05+np.sin(11*22.5*np.pi/180)*Radius,-0.07],
+                               [ -0.06+np.cos(12*22.5*np.pi/180)*Radius,-0.05+np.sin(12*22.5*np.pi/180)*Radius,-0.07],
+                               [ -0.06+np.cos(13*22.5*np.pi/180)*Radius,-0.05+np.sin(13*22.5*np.pi/180)*Radius,-0.07],
+                               [ -0.06+np.cos(14*22.5*np.pi/180)*Radius,-0.05+np.sin(14*22.5*np.pi/180)*Radius,-0.07],
+                               [ -0.06+np.cos(15*22.5*np.pi/180)*Radius,-0.05+np.sin(15*22.5*np.pi/180)*Radius,-0.07],
+                               [ -0.06+np.cos(16*22.5*np.pi/180)*Radius,-0.05+np.sin(16*22.5*np.pi/180)*Radius,-0.07],
+                               ])# leg3(back right) foot locations
+        
+        dance_all_legs.append([
+                               [ -0.06+np.cos(1*22.5*np.pi/180)*Radius,0.05+np.sin(1*22.5*np.pi/180)*Radius,-0.07],
+                               [ -0.06+np.cos(2*22.5*np.pi/180)*Radius,0.05+np.sin(2*22.5*np.pi/180)*Radius,-0.07],
+                               [ -0.06+np.cos(3*22.5*np.pi/180)*Radius,0.05+np.sin(3*22.5*np.pi/180)*Radius,-0.07],
+                               [ -0.06+np.cos(4*22.5*np.pi/180)*Radius,0.05+np.sin(4*22.5*np.pi/180)*Radius,-0.07],
+                               [ -0.06+np.cos(5*22.5*np.pi/180)*Radius,0.05+np.sin(5*22.5*np.pi/180)*Radius,-0.07],
+                               [ -0.06+np.cos(6*22.5*np.pi/180)*Radius,0.05+np.sin(6*22.5*np.pi/180)*Radius,-0.07],
+                               [ -0.06+np.cos(7*22.5*np.pi/180)*Radius,0.05+np.sin(7*22.5*np.pi/180)*Radius,-0.07],
+                               [ -0.06+np.cos(8*22.5*np.pi/180)*Radius,0.05+np.sin(8*22.5*np.pi/180)*Radius,-0.07],
+                               [ -0.06+np.cos(9*22.5*np.pi/180)*Radius,0.05+np.sin(9*22.5*np.pi/180)*Radius,-0.07],
+                               [ -0.06+np.cos(10*22.5*np.pi/180)*Radius,0.05+np.sin(10*22.5*np.pi/180)*Radius,-0.07],
+                               [ -0.06+np.cos(11*22.5*np.pi/180)*Radius,0.05+np.sin(11*22.5*np.pi/180)*Radius,-0.07],
+                               [ -0.06+np.cos(12*22.5*np.pi/180)*Radius,0.05+np.sin(12*22.5*np.pi/180)*Radius,-0.07],
+                               [ -0.06+np.cos(13*22.5*np.pi/180)*Radius,0.05+np.sin(13*22.5*np.pi/180)*Radius,-0.07],
+                               [ -0.06+np.cos(14*22.5*np.pi/180)*Radius,0.05+np.sin(14*22.5*np.pi/180)*Radius,-0.07],
+                               [ -0.06+np.cos(15*22.5*np.pi/180)*Radius,0.05+np.sin(15*22.5*np.pi/180)*Radius,-0.07],
+                               [ -0.06+np.cos(16*22.5*np.pi/180)*Radius,0.05+np.sin(16*22.5*np.pi/180)*Radius,-0.07],
+                               ])# leg4(back left) foot locations
 
-        dance_speed = [[0,0,0],[0,0,0],[0,0,0],[0.1,0,0],[0,0,0]]    # speed_, speed_y, no_use
-
-        dance_attitude = [[0,0,0],[10,0,0],[0,0,0],[0,0,0],[0,0,0]]  # roll, pitch, yaw rate
-        dance_scheme.setAllSequence(dance_all_legs,dance_speed,dance_attitude)
+        dance_speed    = [[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],]
+        dance_attitude = [[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[ 0,0,0],[0,0,0],[0,0,0]]    # roll, pitch, yaw
+        
+        dance_scheme.setInterpolationNumber(15)
+        dance_scheme.setLegsSequence(dance_all_legs,"Forever",1)
+        dance_scheme.setAttitudeSequence(dance_attitude,"Forever",1)
+        dance_scheme.setSpeedSequence(dance_speed,"Forever",1)
         self.MovementLib.append(dance_scheme)      # append dance
 
         return self.MovementLib
-"""
+
+    def head_ellipse(self):
+        """ This movement enables the pupper to draw an ellipse-shaped trajectory with it's head by edting the orientations of
+         the body. The maximum pitching angle is 1/9 π and the maximum yawing angle is 1/6 π 
+        """
+        dance_scheme = Movements('head_ellipse')
+
+        dance_all_legs = []
+        dance_all_legs.append([[ 0.06,-0.05,-0.07],[ 0.06,-0.05,-0.07],[ 0.06,-0.05,-0.07],[ 0.06,-0.05,-0.07],[ 0.06,-0.05,-0.07],[ 0.06,-0.05,-0.07],[ 0.06,-0.05,-0.07],[ 0.06,-0.05,-0.07],[ 0.06,-0.05,-0.07],[ 0.06,-0.05,-0.07],[ 0.06,-0.05,-0.07],[ 0.06,-0.05,-0.07],[ 0.06,-0.05,-0.07],[ 0.06,-0.05,-0.07],[ 0.06,-0.05,-0.07],[ 0.06,-0.05,-0.07],])# leg1
+        dance_all_legs.append([[ 0.06, 0.05,-0.07],[ 0.06, 0.05,-0.07],[ 0.06, 0.05,-0.07],[ 0.06, 0.05,-0.07],[ 0.06, 0.05,-0.07],[ 0.06, 0.05,-0.07],[ 0.06, 0.05,-0.07],[ 0.06, 0.05,-0.07],[ 0.06, 0.05,-0.07],[ 0.06, 0.05,-0.07],[ 0.06, 0.05,-0.07],[ 0.06, 0.05,-0.07],[ 0.06, 0.05,-0.07],[ 0.06, 0.05,-0.07],[ 0.06, 0.05,-0.07],[ 0.06, 0.05,-0.07],])# leg2
+        dance_all_legs.append([[-0.06,-0.05,-0.07],[-0.06,-0.05,-0.07],[-0.06,-0.05,-0.07],[-0.06,-0.05,-0.07],[-0.06,-0.05,-0.07],[-0.06,-0.05,-0.07],[-0.06,-0.05,-0.07],[-0.06,-0.05,-0.07],[-0.06,-0.05,-0.07],[-0.06,-0.05,-0.07],[-0.06,-0.05,-0.07],[-0.06,-0.05,-0.07],[-0.06,-0.05,-0.07],[-0.06,-0.05,-0.07],[-0.06,-0.05,-0.07],[-0.06,-0.05,-0.07],])# leg3
+        dance_all_legs.append([[-0.06, 0.05,-0.07],[-0.06, 0.05,-0.07],[-0.06, 0.05,-0.07],[-0.06, 0.05,-0.07],[-0.06, 0.05,-0.07],[-0.06, 0.05,-0.07],[-0.06, 0.05,-0.07],[-0.06, 0.05,-0.07],[-0.06, 0.05,-0.07],[-0.06, 0.05,-0.07],[-0.06, 0.05,-0.07],[-0.06, 0.05,-0.07],[-0.06, 0.05,-0.07],[-0.06, 0.05,-0.07],[-0.06, 0.05,-0.07],[-0.06, 0.05,-0.07],])# leg4
+
+        dance_speed    = [[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],] 
+        dance_attitude = [[0,20*1.414/2,30*1.414/2],[0,20*0.38268,30*0.92388],[0,0,30],[0,-20*0.38268,30*0.92388],[0,-20*1.414/2,30*1.414/2],[0,-20*0.92388,30*0.38268],[0,-20,0],[0,-20*0.92388,-30*0.38268],[0,-20*1.414/2,-30*1.414/2],[0,-20*0.38268,-30*0.92388],[0,0,-30],[0,20*0.38268,-30*0.92388],[0,20*1.414/2,-30*1.414/2],[0,20*0.92388,-30*0.38268],[0,20,0],[0,20*0.92388,30*0.38268],]         # roll, pitch, yaw
+        
+        dance_scheme.setInterpolationNumber(15)
+        dance_scheme.setLegsSequence(dance_all_legs,"Forever",1)
+        dance_scheme.setAttitudeSequence(dance_attitude,"Forever",1)
+        dance_scheme.setSpeedSequence(dance_speed,"Forever",1)
+        self.MovementLib.append(dance_scheme)      # append dance
+
+        return self.MovementLib
+
+#----------- The level3 samples to DIY complicated movement END END -----------#  
