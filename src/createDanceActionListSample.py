@@ -22,9 +22,8 @@
 #   the mini pupper will dance based on your following script.
 #
 #
-#Test method2: run dancemove.py to do your designed movements
-#   method: type the following command line:
-#           python /home/ubuntu/StanfordQuadruped/dancemove.py
+#Test method2: after edit this file, then run run_danceActionList.py to do your designed movements
+#              $python /home/ubuntu/StanfordQuadruped/run_danceActionList.py
 #
 #
 # Movement Action API List without input parameters
