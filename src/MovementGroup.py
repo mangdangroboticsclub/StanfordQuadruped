@@ -14,10 +14,10 @@
 # limitations under the License.
 #
 # Description: FPC(Flexible Programmable Choreography) APIs
-#              There are 3 level APIs
+#              There are 3 levels of APIs
 #                 Level 1(for beginners): Simple APIs without input parameters
 #                 Level 2(for makers): APIs with input parameters
-#                 Level 3(for beyond): Samples delicately control the foot locations, move speed and attitudes at each execution times
+#                 Level 3(for beyond): Samples delicately control the foot locations, move speed, and attitudes at each execution time.
 #
 import numpy as np
 from src.MovementScheme import Movements 

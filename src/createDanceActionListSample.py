@@ -14,19 +14,24 @@
 # limitations under the License.
 #
 # Description: You can use the following FPC(Flexible Programmable Choreography) APIs to define your Mini Pupper to dance.
+#              There are 3 levels of APIs
+#                 Level 1(for beginners): Simple APIs without input parameters
+#                 Level 2(for makers): APIs with input parameters
+#                 Level 3(for beyond): Samples delicately control the foot locations, move speed, and attitudes at each execution time.
 #
-# Test method1: use controller to do your designed movements 
-#   step1: Pair the controller to your Mini Pupper
+# Test method 1 by the controller:
+#   step1: Pair the controller to your Mini Pupper after power on
 #   step2: Click controller "L1" button
 #   step3: Click controller "Circle" button 
 #   the mini pupper will dance based on your following script.
 #
 #
-#Test method2: after edit this file, then run run_danceActionList.py to do your designed movements
-#              $python /home/ubuntu/StanfordQuadruped/run_danceActionList.py
+#Test method 2 by command line:
+#   After editing this file, run run_danceActionList.py to do your designed movements
+#   $python /home/ubuntu/StanfordQuadruped/run_danceActionList.py
 #
 #
-# Movement Action API List without input parameters
+# Level 1(for beginners): Movement Action API List without input parameters
 # stop()
 # look_up()
 # look_down()
@@ -45,20 +50,25 @@
 # move_leftback()
 # move_rightback()
 #
-# Movement Action API List wit input parameters
+# Level 2(for makers): Movement Action API List with input parameters
 # body_row(row_deg,  time_uni, time_acc)
 # gait_uni(v_x, v_y, time_uni, time_acc)
 # height_move(ht,    time_uni, time_acc)
 # head_move(pitch_deg, yaw_deg, time_uni, time_acc)
 # foreleg_lift(leg_index, ht,   time_uni, time_acc)
 # backleg_lift(leg_index, ht,   time_uni, time_acc)
-# 
+#
+# Level 3(for beyond) samples
+#  body_cycle()
+#  head_ellipse()
+#
+#
 
 from src.MovementGroup import MovementGroups
 
 Move = MovementGroups()
 
-# movements without input parameters
+# Level 1: movements without input parameters
 Move.look_right()
 Move.look_upperright()
 Move.look_up()
@@ -76,7 +86,7 @@ Move.move_backward()
 Move.move_right()
 Move.stop()
 
-# movements with input parameters
+# Level 2: movements with input parameters
 Move.head_move(20)
 Move.stop()
 Move.body_row(10)
@@ -91,5 +101,8 @@ Move.stop()
 Move.gait_uni(0.1)
 Move.stop()
 
+# Level 3 samples
+Move.body_cycle()
+#Move.head_ellipse()
 
 MovementLib = Move.MovementLib
