@@ -39,6 +39,7 @@ class SequenceInterpolation:
 
         self.ExecuteTick = 0
         self.SequenceExecuteCounter = 0
+        self.ExecuteCounterMax = 1
         self.PhaseNumberMax = 1
         self.SequencePoint = [[0,0,0]]
 
@@ -59,7 +60,8 @@ class SequenceInterpolation:
         elif cycle_type == 'Multiple':
             self.SequenceExecuteCounter = cycle_index
         else:
-            self.SequenceExecuteCounter = 1  
+            self.SequenceExecuteCounter = 1
+        self.ExecuteCounterMax = cycle_index
 
         return True
         
@@ -328,9 +330,9 @@ class Movements:
         Returns:
         number
         """
-        Speedticks = (self.SpeedMovements.PhaseNumberMax - 1)* self.SpeedMovements.InterpolationNumber*self.SpeedMovements.SequenceExecuteCounter
-        Attitudeticks = (self.AttitudeMovements.PhaseNumberMax - 1)* self.AttitudeMovements.InterpolationNumber*self.AttitudeMovements.SequenceExecuteCounter
-        Legsticks = (self.LegsMovements[0].PhaseNumberMax - 1)* self.LegsMovements[0].InterpolationNumber*self.LegsMovements[0].SequenceExecuteCounter
+        Speedticks = self.SpeedMovements.PhaseNumberMax * self.SpeedMovements.InterpolationNumber*self.SpeedMovements.ExecuteCounterMax
+        Attitudeticks = self.AttitudeMovements.PhaseNumberMax * self.AttitudeMovements.InterpolationNumber*self.AttitudeMovements.ExecuteCounterMax
+        Legsticks = self.LegsMovements[0].PhaseNumberMax * self.LegsMovements[0].InterpolationNumber*self.LegsMovements[0].ExecuteCounterMax
         
         return max(Speedticks, Attitudeticks, Legsticks)
         
