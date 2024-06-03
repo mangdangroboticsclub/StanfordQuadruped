@@ -36,6 +36,7 @@ def main(use_imu=False):
     #Create movement group scheme instance and set a default True state
     movementCtl = MovementScheme(MovementLib)
     dance_active_state = True
+    lib_length = len(MovementLib)
 
     last_loop = time.time()
 
@@ -64,6 +65,10 @@ def main(use_imu=False):
             controller.run(state, command, disp, legsLocation, attitudes, speed)
         else:
             controller.run(state, command, disp)
+        if movementCtl.movement_now_number >= lib_length - 1 and movementCtl.tick >= movementCtl.now_ticks:
+            print("exit the process")
+            break
+
 
         # Update the pwm widths going to the servos
         hardware_interface.set_actuator_postions(state.joint_angles)
