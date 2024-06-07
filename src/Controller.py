@@ -75,7 +75,7 @@ class Controller:
         return new_foot_locations, contact_modes
 
 
-    def run(self, state, command, disp,location = np.zeros((3,4)),attitude = [0,0,0],robot_speed = [0,0,0]):
+    def run(self, state, command, disp):
         """Steps the controller forward one timestep
 
         Parameters
@@ -160,7 +160,7 @@ class Controller:
                     self.config.default_stance
                     + np.array([0, 0, command.height])[:, np.newaxis]
                  )
-                # Apply the desired body rotation
+                # Apply the desired body rotation and convert degrees to radians by dividing by 57.3
                 rotated_foot_locations = (
                     euler2mat(
                         command.roll,
@@ -173,27 +173,24 @@ class Controller:
                 location_buf = np.zeros((3,4))
                 for index_i in range(3):
                     for index_j in range(4):
-                        location_buf[index_i,index_j] = location[index_i][index_j]
+                        location_buf[index_i,index_j] = command.legslocation[index_i][index_j]
 
-                if (abs(robot_speed[0])<0.01) and (abs(robot_speed[1])<0.01):
+                if (abs(command.horizontal_velocity[0])<0.01) and (abs(command.horizontal_velocity[1])<0.01):
                     state.foot_locations = location_buf
                 else:
-
-                    command.horizontal_velocity[0] = robot_speed[0]
-                    command.horizontal_velocity[1] = robot_speed[1]
                     state.foot_locations,contact_modes = self.step_gait(state,command)
 
                 rotated_foot_locations = (
                     euler2mat(
-                        attitude[0],
-                        attitude[1],
+                        command.roll/57.3,
+                        command.pitch/57.3,
                         #self.smoothed_yaw,
-                        attitude[2],
+                        command.yaw/57.3,
                     )
                     @ state.foot_locations
                 )
 
-
+            
  # Construct foot rotation matrix to compensate for body tilt
             (roll, pitch, yaw) = quat2euler(state.quat_orientation)
             correction_factor = 0.8

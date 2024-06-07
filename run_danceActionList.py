@@ -59,10 +59,12 @@ def main(use_imu=False):
         if dance_active_state == True:
             # Caculate legsLocation, attitudes and speed using custom movement script
             movementCtl.runMovementScheme()
-            legsLocation = movementCtl.getMovemenLegsLocation()
-            attitudes    = movementCtl.getMovemenAttitude()
-            speed        = movementCtl.getMovemenSpeed()
-            controller.run(state, command, disp, legsLocation, attitudes, speed)
+            command.legslocation        = movementCtl.getMovemenLegsLocation()
+            command.horizontal_velocity = movementCtl.getMovemenSpeed()
+            command.roll                = movementCtl.attitude_now[0]
+            command.pitch               = movementCtl.attitude_now[1]
+            command.yaw                 = movementCtl.attitude_now[2]
+            controller.run(state, command, disp)
         else:
             controller.run(state, command, disp)
         if movementCtl.movement_now_number >= lib_length - 1 and movementCtl.tick >= movementCtl.now_ticks:

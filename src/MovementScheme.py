@@ -349,7 +349,7 @@ class MovementScheme:
     def __init__(self,movements_lib):
 
         self.movements_lib = movements_lib
-        
+
         self.movements_now = movements_lib[0]
         self.movements_pre = movements_lib[0]
         self.movement_now_name =  movements_lib[0].getMovementName()
@@ -706,15 +706,12 @@ class MovementScheme:
             movement_name = self.updateMovementType()
 
         self.updateMovement(movement_name) 
- 
-        return True
 
     def getMovemenSpeed(self):
         """get now speed
         """
-        speed_now = [0,0,0]
-        for xyz in range(3):
-
+        speed_now = np.zeros(2,dtype=np.float64)
+        for xyz in range(2):
             speed_now[xyz] = self.speed_now[xyz]
         return speed_now
 
@@ -726,11 +723,5 @@ class MovementScheme:
     def getMovemenAttitude(self):
         """get now attitude
         """
-        attitude_now_rad = [0,0,0] 
-
-        for rpy in range(3):
-            #angle to radin
-            attitude_now_rad[rpy] = self.attitude_now[rpy] / 57.3
-
-        return   attitude_now_rad
+        return ture
 

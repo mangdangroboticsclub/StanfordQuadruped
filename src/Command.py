@@ -11,8 +11,10 @@ class Command:
         self.height = -0.07
         self.pitch = 0.0
         self.roll = 0.0
+        self.yaw = 0.0
         self.activation = 0
-        
+        self.legslocation = [[0.06,0.06,-0.06,-0.06],[-0.05,0.05,-0.05,0.05],[-0.07,-0.07,-0.07,-0.07]]
+
         self.hop_event = False
         self.trot_event = False
         self.activate_event = False
