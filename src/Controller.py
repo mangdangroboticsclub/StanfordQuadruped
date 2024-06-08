@@ -175,7 +175,7 @@ class Controller:
                     for index_j in range(4):
                         location_buf[index_i,index_j] = command.legslocation[index_i][index_j]
 
-                if (abs(command.horizontal_velocity[0])<0.01) and (abs(command.horizontal_velocity[1])<0.01):
+                if (abs(command.horizontal_velocity[0])<0.01) and (abs(command.horizontal_velocity[1])<0.01 and abs(command.yaw_rate ==0)):
                     state.foot_locations = location_buf
                 else:
                     state.foot_locations,contact_modes = self.step_gait(state,command)

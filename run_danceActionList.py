@@ -64,6 +64,7 @@ def main(use_imu=False):
             command.roll                = movementCtl.attitude_now[0]
             command.pitch               = movementCtl.attitude_now[1]
             command.yaw                 = movementCtl.attitude_now[2]
+            command.yaw_rate            = movementCtl.getMovemenTurn()
             controller.run(state, command, disp)
         else:
             controller.run(state, command, disp)
