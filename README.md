@@ -8,7 +8,8 @@ This branch contains modifications to the code of Stanford Pupper to make Mini P
 
 ## Use the pre-built image
 
-1. Download the [pre-built image](https://drive.google.com/file/d/1B9kNB0XnqvkOrHszQJVyMPZ1RG85zfG3/view?usp=sharing) , web server and keyboard controller are both included.
+The repo can be used on Mini Pupper 1 and 2.
+1. Download the pre-built image for [Mini Pupper 1](https://drive.google.com/drive/folders/1aSKxSVc2tKQPeyAFTI9EaTHUAFZCWseo?usp=sharing) or [Mini Pupper 1](https://drive.google.com/drive/folders/1j3ip6XKhgUHC9gO1blBm4xIjogaUM9yk?usp=sharing).
 2. [flash it into your SD card](https://minipupperdocs.readthedocs.io/en/latest/guide/Assembly.html#step-1-3-write-the-image-into-microsd-card).
 3. Play your Mini Pupper.
 
