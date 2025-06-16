@@ -3,9 +3,9 @@
 # check Ubuntu version
 source /etc/os-release
 
-if [[ $UBUNTU_CODENAME != 'jammy' ]]
+if [[ $UBUNTU_CODENAME != 'jammy' && $UBUNTU_CODENAME != 'noble']]
 then
-    echo "Ubuntu 22.04.1 LTS (Jammy Jellyfish) is required"
+    echo "Ubuntu 22.04.1 LTS (Jammy Jellyfish) is required or Ubuntu 24.04 LTS (noble)"
     echo "You are using $VERSION"
     exit 1
 fi
