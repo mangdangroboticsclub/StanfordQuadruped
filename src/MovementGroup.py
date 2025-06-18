@@ -22,7 +22,6 @@
 import numpy as np
 from src.MovementScheme import Movements 
 
-
 class MovementGroups:
 
     def __init__(self):
