@@ -345,6 +345,42 @@ class MovementGroups:
         self.MovementLib.append(dance_scheme)      # append dance
         return self.MovementLib
     
+
+    
+
+    def balance(self, roll_deg, pitch_deg, time_uni, time_acc):
+        """Set the robot to tilt its body to a certain angle
+        Args:
+            roll_deg: the desired angle you want the robot to roll 
+            pitch_deg: the desired angle you want the robot to pitch
+            time_acc: how long it takes to reach the desired angle (unit: second)
+            time_uni: how long pupper will keep at the desired pose (unit: second)
+        Return:
+            Append the body row movement into the MovementLib
+        """
+        time_dt = 0.01
+        if time_uni <= 0:
+            time_uni = self.dt
+        if time_acc <=0:
+            time_acc = self.dt
+        interval_uni = int(time_uni / self.dt) #number of times to keep the uniform state 
+        interval_acc = int(time_acc / self.dt) #number of times to move the leg in order to reach desired place
+        modified_roll = self.cap_limit(self.rowcap, -self.rowcap, roll_deg) #limit the angle such that it won't go out the safe limit
+        modified_pitch = self.cap_limit(self.pitchcap, -self.pitchcap, pitch_deg) #limit the angle such that it won't go out the safe limit
+        dance_scheme = Movements('balance') 
+        dance_all_legs = self.default_stand #
+        dance_speed = [[0,0,0]]        # speed_x, speed_y, no_use 
+        dance_attitude = [[modified_roll,modified_pitch,0],[modified_roll,modified_pitch,0]]     # roll, pitch, yaw degree
+        dance_scheme.setInterpolationNumber(interval_uni) #Number of reaching point on the curve such that the legs move on the way to its desired position
+        dance_scheme.setTransitionTic(interval_acc) #Time taken from 1 step to the next step
+        dance_scheme.setLegsSequence(dance_all_legs) #Which leg to move 
+        dance_scheme.setAttitudeSequence(dance_attitude) #setAttitude of the body to move the legs 
+        self.MovementLib.append(dance_scheme)      # append dance
+        return self.MovementLib
+
+
+
+    
     def gait_uni(self, v_x = 0, v_y = 0, time_uni = 1, time_acc = 1):
         """Let robot gait uniformly for a given time
         Args:
