@@ -18,35 +18,42 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            padding: 20px;
+            padding: 0;
+            overflow: hidden;
         }
 
         .container {
             width: 100%;
             max-width: 800px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
         }
 
         .header {
             text-align: center;
             color: white;
-            margin-bottom: 30px;
+            padding: 10px 20px;
+            flex-shrink: 0;
+            background: rgba(0, 0, 0, 0.2);
         }
 
         .header h1 {
-            font-size: 2em;
-            margin-bottom: 10px;
+            font-size: 1.5em;
+            margin-bottom: 8px;
         }
 
         .status {
             display: inline-block;
-            padding: 8px 20px;
-            border-radius: 20px;
+            padding: 5px 15px;
+            border-radius: 15px;
             font-weight: bold;
-            margin-top: 10px;
+            margin-top: 5px;
+            font-size: 0.9em;
         }
 
         .status.disconnected {
@@ -63,21 +70,22 @@
         }
 
         .connect-btn {
-            padding: 15px 40px;
-            font-size: 1.2em;
+            padding: 10px 30px;
+            font-size: 1em;
             background-color: #4CAF50;
             color: white;
             border: none;
-            border-radius: 30px;
+            border-radius: 20px;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
             transition: all 0.3s;
+            margin-top: 5px;
         }
 
         .connect-btn:hover {
             background-color: #45a049;
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
         }
 
         .connect-btn:disabled {
@@ -88,15 +96,24 @@
 
         .controls {
             display: none;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 20px;
+            -webkit-overflow-scrolling: touch;
         }
 
         .controls.active {
-            display: block;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .controls-inner {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
         }
 
         .joysticks {
@@ -226,15 +243,155 @@
             margin: 5px 0;
         }
 
-        @media (max-width: 600px) {
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.2em;
+                margin-bottom: 5px;
+            }
+            
+            .status {
+                font-size: 0.8em;
+                padding: 4px 12px;
+            }
+            
+            .connect-btn {
+                padding: 8px 20px;
+                font-size: 0.9em;
+            }
+            
+            .controls {
+                padding: 10px;
+            }
+            
+            .controls-inner {
+                padding: 15px;
+            }
+            
+            .joysticks {
+                margin-bottom: 15px;
+                gap: 15px;
+            }
+            
             .joystick {
-                width: 150px;
-                height: 150px;
+                width: 140px;
+                height: 140px;
             }
             
             .joystick-stick {
-                width: 50px;
-                height: 50px;
+                width: 45px;
+                height: 45px;
+            }
+            
+            .joystick-label {
+                font-size: 0.8em;
+                margin-bottom: 5px;
+            }
+            
+            .buttons {
+                gap: 10px;
+                grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            }
+            
+            .button {
+                padding: 12px;
+                font-size: 0.85em;
+            }
+            
+            .dpad {
+                grid-template-columns: repeat(3, 50px);
+                grid-template-rows: repeat(3, 50px);
+                gap: 4px;
+                margin: 15px auto;
+            }
+            
+            .dpad-btn {
+                font-size: 1.2em;
+            }
+            
+            .info {
+                margin-top: 15px;
+                padding: 10px;
+                font-size: 0.8em;
+            }
+        }
+        
+        /* Extra small screens */
+        @media (max-width: 400px) {
+            .joystick {
+                width: 120px;
+                height: 120px;
+            }
+            
+            .joystick-stick {
+                width: 40px;
+                height: 40px;
+            }
+            
+            .dpad {
+                grid-template-columns: repeat(3, 45px);
+                grid-template-rows: repeat(3, 45px);
+            }
+        }
+        
+        /* Landscape mobile */
+        @media (max-width: 900px) and (orientation: landscape) {
+            .header {
+                display: none;
+            }
+            
+            .controls {
+                padding: 8px;
+            }
+            
+            .controls-inner {
+                padding: 10px;
+            }
+            
+            .joysticks {
+                margin-bottom: 10px;
+                gap: 10px;
+            }
+            
+            .joystick {
+                width: 100px;
+                height: 100px;
+            }
+            
+            .joystick-stick {
+                width: 35px;
+                height: 35px;
+            }
+            
+            .joystick-label {
+                font-size: 0.75em;
+                margin-bottom: 3px;
+            }
+            
+            .buttons {
+                gap: 8px;
+            }
+            
+            .button {
+                padding: 8px;
+                font-size: 0.75em;
+            }
+            
+            .dpad {
+                grid-template-columns: repeat(3, 40px);
+                grid-template-rows: repeat(3, 40px);
+                gap: 3px;
+                margin: 10px auto;
+            }
+            
+            .dpad-btn {
+                font-size: 1em;
+            }
+            
+            .info {
+                margin-top: 10px;
+                padding: 8px;
+                font-size: 0.7em;
             }
         }
     </style>
@@ -249,54 +406,59 @@
         </div>
 
         <div class="controls" id="controls">
-            <div class="joysticks">
-                <div class="joystick-container">
-                    <div class="joystick-label">Left Stick (Movement)</div>
-                    <div class="joystick" id="leftJoystick">
-                        <div class="joystick-stick" id="leftStick"></div>
+            <div class="controls-inner">
+                <div class="joysticks">
+                    <div class="joystick-container">
+                        <div class="joystick-label">Left Stick (Movement)</div>
+                        <div class="joystick" id="leftJoystick">
+                            <div class="joystick-stick" id="leftStick"></div>
+                        </div>
+                    </div>
+                    <div class="joystick-container">
+                        <div class="joystick-label">Right Stick (Yaw/Pitch)</div>
+                        <div class="joystick" id="rightJoystick">
+                            <div class="joystick-stick" id="rightStick"></div>
+                        </div>
                     </div>
                 </div>
-                <div class="joystick-container">
-                    <div class="joystick-label">Right Stick (Yaw/Pitch)</div>
-                    <div class="joystick" id="rightJoystick">
-                        <div class="joystick-stick" id="rightStick"></div>
+
+                <div class="joystick-label">D-Pad (Height/Roll)</div>
+                <div class="dpad">
+                    <div class="dpad-btn empty"></div>
+                    <div class="dpad-btn" data-dpad="up">▲</div>
+                    <div class="dpad-btn empty"></div>
+                    <div class="dpad-btn" data-dpad="left">◄</div>
+                    <div class="dpad-btn empty"></div>
+                    <div class="dpad-btn" data-dpad="right">►</div>
+                    <div class="dpad-btn empty"></div>
+                    <div class="dpad-btn" data-dpad="down">▼</div>
+                    <div class="dpad-btn empty"></div>
+                </div>
+
+                <div class="buttons">
+                    <button class="button" id="btnDisconnect">Disconnect</button>
+                    <button class="button" id="btnR1">R1 (Trot)</button>
+                </div>
+                
+                <!-- Future features to implement:
+                     - Hop (X button)
+                     - Dance (Circle button)
+                     - Shutdown (Triangle button)
+                -->
+
+                <div class="info">
+                    <div class="info-row">
+                        <span>Left Stick:</span>
+                        <span id="infoLeft">X: 0.00, Y: 0.00</span>
                     </div>
-                </div>
-            </div>
-
-            <div class="joystick-label">D-Pad (Height/Roll)</div>
-            <div class="dpad">
-                <div class="dpad-btn empty"></div>
-                <div class="dpad-btn" data-dpad="up">▲</div>
-                <div class="dpad-btn empty"></div>
-                <div class="dpad-btn" data-dpad="left">◄</div>
-                <div class="dpad-btn empty"></div>
-                <div class="dpad-btn" data-dpad="right">►</div>
-                <div class="dpad-btn empty"></div>
-                <div class="dpad-btn" data-dpad="down">▼</div>
-                <div class="dpad-btn empty"></div>
-            </div>
-
-            <div class="buttons">
-                <button class="button" id="btnL1">L1 (Activate)</button>
-                <button class="button" id="btnR1">R1 (Trot)</button>
-                <button class="button" id="btnX">X (Hop)</button>
-                <button class="button" id="btnCircle">○ (Dance)</button>
-                <button class="button" id="btnTriangle">△ (Shutdown)</button>
-            </div>
-
-            <div class="info">
-                <div class="info-row">
-                    <span>Left Stick:</span>
-                    <span id="infoLeft">X: 0.00, Y: 0.00</span>
-                </div>
-                <div class="info-row">
-                    <span>Right Stick:</span>
-                    <span id="infoRight">X: 0.00, Y: 0.00</span>
-                </div>
-                <div class="info-row">
-                    <span>D-Pad:</span>
-                    <span id="infoDpad">X: 0, Y: 0</span>
+                    <div class="info-row">
+                        <span>Right Stick:</span>
+                        <span id="infoRight">X: 0.00, Y: 0.00</span>
+                    </div>
+                    <div class="info-row">
+                        <span>D-Pad:</span>
+                        <span id="infoDpad">X: 0, Y: 0</span>
+                    </div>
                 </div>
             </div>
         </div>

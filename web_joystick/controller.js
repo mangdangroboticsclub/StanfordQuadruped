@@ -19,12 +19,10 @@ class MiniPupperController {
             dpadx: 0, // D-pad X
             dpady: 0, // D-pad Y
             R1: 0,
-            L1: 0,
-            x: 0,
-            circle: 0,
-            triangle: 0,
             message_rate: 50
         };
+        
+        // Future features: x (hop), circle (dance), triangle (shutdown)
         
         this.updateInterval = null;
         this.joystickActiveLeft = false;
@@ -42,11 +40,8 @@ class MiniPupperController {
         this.initJoystick('right', document.getElementById('rightJoystick'), document.getElementById('rightStick'));
         
         // Initialize buttons
-        this.initButton('btnL1', 'L1');
+        this.initDisconnectButton();
         this.initButton('btnR1', 'R1');
-        this.initButton('btnX', 'x');
-        this.initButton('btnCircle', 'circle');
-        this.initButton('btnTriangle', 'triangle');
         
         // Initialize D-pad
         this.initDpad();
@@ -182,23 +177,23 @@ class MiniPupperController {
                 y = Math.sin(angle) * maxRadius;
             }
             
-            // Update visual position
-            stick.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
+            // Update visual position - invert both X and Y axes for visual display
+            stick.style.transform = `translate(calc(-50% - ${x}px), calc(-50% - ${y}px))`;
             
             // Update state (-1.0 to 1.0)
             const normalizedX = x / maxRadius;
-            const normalizedY = y / maxRadius;
+            const normalizedY = -y / maxRadius; // Invert Y for correct mechanical direction
             
             if (side === 'left') {
                 this.state.lx = normalizedX;
-                this.state.ly = -normalizedY; // Invert Y
+                this.state.ly = normalizedY;
                 document.getElementById('infoLeft').textContent = 
-                    `X: ${normalizedX.toFixed(2)}, Y: ${(-normalizedY).toFixed(2)}`;
+                    `X: ${normalizedX.toFixed(2)}, Y: ${normalizedY.toFixed(2)}`;
             } else {
                 this.state.rx = normalizedX;
-                this.state.ry = -normalizedY; // Invert Y
+                this.state.ry = normalizedY;
                 document.getElementById('infoRight').textContent = 
-                    `X: ${normalizedX.toFixed(2)}, Y: ${(-normalizedY).toFixed(2)}`;
+                    `X: ${normalizedX.toFixed(2)}, Y: ${normalizedY.toFixed(2)}`;
             }
         };
         
@@ -254,27 +249,28 @@ class MiniPupperController {
         });
     }
     
+    initDisconnectButton() {
+        const button = document.getElementById('btnDisconnect');
+        button.addEventListener('click', () => {
+            if (this.isConnected && this.device) {
+                console.log('Manually disconnecting...');
+                this.device.gatt.disconnect();
+                // onDisconnected will be called automatically
+            }
+        });
+    }
+    
     initButton(elementId, stateKey) {
         const button = document.getElementById(elementId);
-        let isToggle = (stateKey === 'R1' || stateKey === 'L1');
+        // All buttons are now momentary (not toggle) to work with edge detection
+        // The robot's Controller.py handles the state machine internally
         
         const activate = () => {
-            if (isToggle) {
-                this.state[stateKey] = this.state[stateKey] ? 0 : 1;
-                if (this.state[stateKey]) {
-                    button.classList.add('toggle-on');
-                } else {
-                    button.classList.remove('toggle-on');
-                }
-            } else {
-                this.state[stateKey] = 1;
-            }
+            this.state[stateKey] = 1;
         };
         
         const deactivate = () => {
-            if (!isToggle) {
-                this.state[stateKey] = 0;
-            }
+            this.state[stateKey] = 0;
         };
         
         button.addEventListener('mousedown', activate);
