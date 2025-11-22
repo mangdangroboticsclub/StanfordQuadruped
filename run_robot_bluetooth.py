@@ -154,24 +154,7 @@ def main(use_imu=False, use_ble=True):
         )
         state.quat_orientation = quat_orientation
         
-        # Handle behavior state changes
-        if command.trot_event:
-            if state.behavior_state == BehaviorState.REST:
-                state.behavior_state = BehaviorState.TROT
-                disp.show_state(BehaviorState.TROT)
-                print("[State] Trotting")
-            else:
-                state.behavior_state = BehaviorState.REST
-                disp.show_state(BehaviorState.REST)
-                print("[State] Resting")
-        
-        if command.hop_event:
-            if state.behavior_state == BehaviorState.REST:
-                state.behavior_state = BehaviorState.HOP
-                disp.show_state(BehaviorState.HOP)
-                print("[State] Hopping")
-        
-        # Step the controller forward
+        # Step the controller forward (handles all state transitions)
         controller.run(state, command, disp)
         
         # Update state

@@ -166,7 +166,9 @@ class BluetoothInterface:
                 elif mv_type == "trot":
                     command.trot_event = True
                 elif mv_type == "rest":
-                    command.activate_event = True
+                    # Use trot_event to transition from TROT to REST
+                    # Controller's trot_transition_mapping handles: TROT→REST, REST→TROT
+                    command.trot_event = True
                 elif mv_type == "stand":
                     # Reset to neutral standing position
                     command.horizontal_velocity = np.array([0.0, 0.0])
@@ -242,13 +244,16 @@ class BluetoothInterface:
         command.trot_event = (gait_toggle == 1 and self.previous_gait_toggle == 0)
         
         # Check if requesting a state transition to hopping
-        hop_toggle = msg["x"]
+        # Optional: web joystick doesn't send these (future features)
+        hop_toggle = msg.get("x", 0)
         command.hop_event = (hop_toggle == 1 and self.previous_hop_toggle == 0)
         
-        activate_toggle = msg["L1"]
+        # L1 is optional (web joystick doesn't send it, uses auto-activation instead)
+        activate_toggle = msg.get("L1", 0)
         command.activate_event = (activate_toggle == 1 and self.previous_activate_toggle == 0)
         
-        dance_activate_toggle = msg["circle"]
+        # Dance is optional (web joystick doesn't send it, future feature)
+        dance_activate_toggle = msg.get("circle", 0)
         command.dance_activate_event = (dance_activate_toggle == 1 and self.previous_dance_activate_toggle == 0)
         
         # Update previous values for toggles
