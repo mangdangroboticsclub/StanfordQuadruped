@@ -16,6 +16,130 @@ import dbus.service
 from gi.repository import GLib
 from tools_config import TOOLS, validate_tool_arguments
 
+# Tool handler configuration - maps tool names to their handler metadata
+# This allows adding new tools without modifying the main handler code
+TOOL_HANDLERS = {
+    # Basic commands
+    "bark": {
+        "handler": "discrete",
+        "log": "Bark",
+        "result": "Bark executed successfully"
+    },
+    "wake_up": {
+        "handler": "wake_up",
+        "log": "Waking Up",
+        "result": "Robot is now awake and active"
+    },
+    "rest": {
+        "handler": "rest",
+        "log": "Resting",
+        "result": "Queued: rest"
+    },
+    
+    # Compatibility with Block-Xiaozhi interface
+    "self.system.quit": {
+        "handler": "rest",
+        "log": "System quit (mapping to rest)",
+        "result": "Robot deactivated"
+    },
+    
+    # Movement commands (with time parameter)
+    "move_forward": {
+        "handler": "movement",
+        "command": "forward",
+        "log": "Moving forward"
+    },
+    "move_backward": {
+        "handler": "movement",
+        "command": "backward",
+        "log": "Moving backward"
+    },
+    "move_left": {
+        "handler": "movement",
+        "command": "left",
+        "log": "Moving left"
+    },
+    "move_right": {
+        "handler": "movement",
+        "command": "right",
+        "log": "Moving right"
+    },
+    "move_forward_left": {
+        "handler": "movement",
+        "command": "forward_left",
+        "log": "Moving forward-left"
+    },
+    "move_forward_right": {
+        "handler": "movement",
+        "command": "forward_right",
+        "log": "Moving forward-right"
+    },
+    "move_backward_left": {
+        "handler": "movement",
+        "command": "backward_left",
+        "log": "Moving backward-left"
+    },
+    "move_backward_right": {
+        "handler": "movement",
+        "command": "backward_right",
+        "log": "Moving backward-right"
+    },
+    
+    # Turn commands (with time and rate parameters)
+    "turn_left": {
+        "handler": "turn",
+        "command": "turn_left",
+        "log": "Turning left"
+    },
+    "turn_right": {
+        "handler": "turn",
+        "command": "turn_right",
+        "log": "Turning right"
+    },
+    
+    # Look/pose commands (with time parameter)
+    "look_up": {
+        "handler": "pose",
+        "command": "look_up",
+        "log": "Looking up"
+    },
+    "look_down": {
+        "handler": "pose",
+        "command": "look_down",
+        "log": "Looking down"
+    },
+    "look_left": {
+        "handler": "pose",
+        "command": "look_left",
+        "log": "Looking left"
+    },
+    "look_right": {
+        "handler": "pose",
+        "command": "look_right",
+        "log": "Looking right"
+    },
+    "look_up_left": {
+        "handler": "pose",
+        "command": "look_up_left",
+        "log": "Looking up-left"
+    },
+    "look_up_right": {
+        "handler": "pose",
+        "command": "look_up_right",
+        "log": "Looking up-right"
+    },
+    "look_down_left": {
+        "handler": "pose",
+        "command": "look_down_left",
+        "log": "Looking down-left"
+    },
+    "look_down_right": {
+        "handler": "pose",
+        "command": "look_down_right",
+        "log": "Looking down-right"
+    },
+}
+
 # Add StanfordQuadruped project root to path so `src` package imports resolve
 # MovementGroup.py expects to import `src.MovementScheme`, so the project root
 # (one level above `src`) must be on sys.path.
@@ -364,19 +488,23 @@ class MinipupperCharacteristic(Characteristic):
         return chunks
 
     def handle_tools_list(self) -> str:
-        """Handle tools/list request"""
+        """Handle tools/list request - filters out wake_up, rest, and system.quit"""
+        # Filter out tools that control robot activation state
+        excluded_tools = {"wake_up", "rest", "self.system.quit"}
+        filtered_tools = [tool for tool in TOOLS if tool["name"] not in excluded_tools]
+        
         response = {
             "type": "mcp_response",
             "payload": {
                 "result": {
-                    "tools": TOOLS
+                    "tools": filtered_tools
                 }
             }
         }
         return json.dumps(response)
 
     def handle_tools_call(self, params: dict) -> str:
-        """Handle tools/call request"""
+        """Handle tools/call request dynamically based on TOOL_HANDLERS configuration"""
         tool_name = params.get("name", "")
         arguments = params.get("arguments", {})
         
@@ -397,164 +525,94 @@ class MinipupperCharacteristic(Characteristic):
                 }
             })
         
-        # Execute the tool
+        # Check if tool exists in handler configuration
+        if tool_name not in TOOL_HANDLERS:
+            return json.dumps({
+                "type": "mcp_response",
+                "payload": {
+                    "error": {
+                        "code": -32601,
+                        "message": f"Tool not found: {tool_name}"
+                    }
+                }
+            })
+        
+        # Execute the tool based on handler type
         try:
-            if tool_name == "bark":
-                print("Bark", flush=True)
-                result_text = "Bark executed successfully"
-                
-            elif tool_name == "move_forward":
-                time_duration = arguments.get("time", 1.0)
-                print(f"Moving forward for {time_duration} seconds", flush=True)
-                
-                # Queue command via BluetoothInterface
-                if self.bluetooth_interface:
-                    self.bluetooth_interface.queue_movement_command("forward", time_duration)
-                    result_text = f"Queued: move forward for {time_duration}s"
-                else:
-                    result_text = f"BluetoothInterface not available"
-                
-            elif tool_name == "move_backward":
-                time_duration = arguments.get("time", 1.0)
-                print(f"Moving backward for {time_duration} seconds", flush=True)
-                
-                if self.bluetooth_interface:
-                    self.bluetooth_interface.queue_movement_command("backward", time_duration)
-                    result_text = f"Queued: move backward for {time_duration}s"
-                else:
-                    result_text = f"BluetoothInterface not available"
-                
-            elif tool_name == "move_left":
-                time_duration = arguments.get("time", 1.0)
-                print(f"Moving left for {time_duration} seconds", flush=True)
-                
-                if self.bluetooth_interface:
-                    self.bluetooth_interface.queue_movement_command("left", time_duration)
-                    result_text = f"Queued: move left for {time_duration}s"
-                else:
-                    result_text = f"BluetoothInterface not available"
-                
-            elif tool_name == "move_right":
-                time_duration = arguments.get("time", 1.0)
-                print(f"Moving right for {time_duration} seconds", flush=True)
-                
-                if self.bluetooth_interface:
-                    self.bluetooth_interface.queue_movement_command("right", time_duration)
-                    result_text = f"Queued: move right for {time_duration}s"
-                else:
-                    result_text = f"BluetoothInterface not available"
+            handler_config = TOOL_HANDLERS[tool_name]
+            handler_type = handler_config["handler"]
             
-            elif tool_name == "turn_left":
-                time_duration = arguments.get("time", 1.0)
-                rate = arguments.get("rate", 0.8)
-                print(f"Turning left for {time_duration} seconds at rate {rate}", flush=True)
-                
-                if self.bluetooth_interface:
-                    self.bluetooth_interface.queue_movement_command("turn_left", time_duration, rate)
-                    result_text = f"Queued: turn left for {time_duration}s at {rate} rad/s"
-                else:
-                    result_text = f"BluetoothInterface not available"
+            # Log the action
+            if "log" in handler_config:
+                log_msg = handler_config["log"]
+                if handler_type in ["movement", "pose", "turn"]:
+                    time_duration = arguments.get("time", 1.0)
+                    log_msg += f" for {time_duration} seconds"
+                    if handler_type == "turn" and "rate" in arguments:
+                        rate = arguments.get("rate", 0.8)
+                        log_msg += f" at rate {rate}"
+                print(log_msg, flush=True)
             
-            elif tool_name == "turn_right":
-                time_duration = arguments.get("time", 1.0)
-                rate = arguments.get("rate", 0.8)
-                print(f"Turning right for {time_duration} seconds at rate {rate}", flush=True)
-                
-                if self.bluetooth_interface:
-                    self.bluetooth_interface.queue_movement_command("turn_right", time_duration, rate)
-                    result_text = f"Queued: turn right for {time_duration}s at {rate} rad/s"
-                else:
-                    result_text = f"BluetoothInterface not available"
+            result_text = None
             
-            elif tool_name == "look_up":
-                time_duration = arguments.get("time", 1.0)
-                print(f"Looking up for {time_duration} seconds", flush=True)
+            # Handle different tool types
+            if handler_type == "discrete":
+                # Simple discrete commands (bark, etc.)
+                result_text = handler_config.get("result", f"{tool_name} executed")
                 
+            elif handler_type == "wake_up":
+                # Wake up command - enable force active mode
                 if self.bluetooth_interface:
-                    self.bluetooth_interface.queue_pose_command("look_up", time_duration)
-                    result_text = f"Queued: look up for {time_duration}s"
-                else:
-                    result_text = f"BluetoothInterface not available"
-            
-            elif tool_name == "look_down":
-                time_duration = arguments.get("time", 1.0)
-                print(f"Looking down for {time_duration} seconds", flush=True)
-                
-                if self.bluetooth_interface:
-                    self.bluetooth_interface.queue_pose_command("look_down", time_duration)
-                    result_text = f"Queued: look down for {time_duration}s"
-                else:
-                    result_text = f"BluetoothInterface not available"
-            
-            elif tool_name == "sit":
-                time_duration = arguments.get("time", 2.0)
-                print(f"Sitting for {time_duration} seconds", flush=True)
-                
-                if self.bluetooth_interface:
-                    self.bluetooth_interface.queue_pose_command("sit", time_duration)
-                    result_text = f"Queued: sit for {time_duration}s"
-                else:
-                    result_text = f"BluetoothInterface not available"
-            
-            elif tool_name == "stand":
-                print("Standing", flush=True)
-                
-                if self.bluetooth_interface:
-                    self.bluetooth_interface.queue_discrete_command("stand")
-                    result_text = "Queued: stand"
+                    self.bluetooth_interface.set_force_active(True)
+                    result_text = handler_config.get("result", "Robot is now awake and active")
                 else:
                     result_text = "BluetoothInterface not available"
-            
-            elif tool_name == "hop":
-                print("Hopping", flush=True)
-                
-                if self.bluetooth_interface:
-                    self.bluetooth_interface.queue_discrete_command("hop")
-                    result_text = "Queued: hop"
-                else:
-                    result_text = "BluetoothInterface not available"
-            
-            elif tool_name == "trot":
-                print("Trotting", flush=True)
-                
-                if self.bluetooth_interface:
-                    self.bluetooth_interface.queue_discrete_command("trot")
-                    result_text = "Queued: trot"
-                else:
-                    result_text = "BluetoothInterface not available"
-            
-            elif tool_name == "rest":
-                print("Resting", flush=True)
-                
+                    
+            elif handler_type == "rest":
+                # Rest command - queue discrete command and disable force active
                 if self.bluetooth_interface:
                     self.bluetooth_interface.queue_discrete_command("rest")
-                    # Also disable force active mode
                     self.bluetooth_interface.set_force_active(False)
-                    result_text = "Queued: rest"
+                    result_text = handler_config.get("result", "Queued: rest")
+                else:
+                    result_text = "BluetoothInterface not available"
+                    
+            elif handler_type == "movement":
+                # Movement commands (forward, backward, left, right, diagonals)
+                time_duration = arguments.get("time", 1.0)
+                command = handler_config["command"]
+                
+                if self.bluetooth_interface:
+                    self.bluetooth_interface.queue_movement_command(command, time_duration)
+                    result_text = f"Queued: {handler_config.get('log', tool_name).lower()} for {time_duration}s"
+                else:
+                    result_text = "BluetoothInterface not available"
+                    
+            elif handler_type == "turn":
+                # Turn commands (with rate parameter)
+                time_duration = arguments.get("time", 1.0)
+                rate = arguments.get("rate", 0.8)
+                command = handler_config["command"]
+                
+                if self.bluetooth_interface:
+                    self.bluetooth_interface.queue_movement_command(command, time_duration, rate)
+                    result_text = f"Queued: {handler_config.get('log', tool_name).lower()} for {time_duration}s at {rate} rad/s"
+                else:
+                    result_text = "BluetoothInterface not available"
+                    
+            elif handler_type == "pose":
+                # Pose/look commands
+                time_duration = arguments.get("time", 1.0)
+                command = handler_config["command"]
+                
+                if self.bluetooth_interface:
+                    self.bluetooth_interface.queue_pose_command(command, time_duration)
+                    result_text = f"Queued: {handler_config.get('log', tool_name).lower()} for {time_duration}s"
                 else:
                     result_text = "BluetoothInterface not available"
             
-            elif tool_name == "wake_up":
-                print("Waking Up", flush=True)
-                
-                if self.bluetooth_interface:
-                    # Enable force active mode
-                    self.bluetooth_interface.set_force_active(True)
-                    result_text = "Robot is now awake and active"
-                else:
-                    result_text = "BluetoothInterface not available"
-                
             else:
-                # Tool not found
-                return json.dumps({
-                    "type": "mcp_response",
-                    "payload": {
-                        "error": {
-                            "code": -32601,
-                            "message": f"Tool not found: {tool_name}"
-                        }
-                    }
-                })
+                result_text = f"Unknown handler type: {handler_type}"
             
             # Success response
             return json.dumps({
@@ -600,6 +658,27 @@ class MinipupperCharacteristic(Characteristic):
         try:
             request = json.loads(request_data)
             print(f"\n[Received] {request}", flush=True)
+            
+            # Check if this is a text message (Block-Xiaozhi start flag compatibility)
+            if request.get("type") == "text":
+                text_content = request.get("text", "").strip()
+                if text_content.lower() == "wake up":
+                    print("[Text Message] 'Wake Up' detected - activating robot", flush=True)
+                    # Treat as wake_up command
+                    if self.bluetooth_interface:
+                        self.bluetooth_interface.set_force_active(True)
+                    return [json.dumps({
+                        "type": "text_response",
+                        "status": "ok",
+                        "message": "Robot is now awake and active"
+                    })]
+                else:
+                    print(f"[Text Message] Received: {text_content}", flush=True)
+                    return [json.dumps({
+                        "type": "text_response",
+                        "status": "ok",
+                        "message": f"Received: {text_content}"
+                    })]
             
             # Check if this is a joystick message (web app)
             if request.get("type") == "joystick":
