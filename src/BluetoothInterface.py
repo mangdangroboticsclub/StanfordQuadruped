@@ -20,6 +20,9 @@ class BluetoothInterface:
     Bluetooth interface that mimics JoystickInterface but receives commands via BLE
     """
     
+    # Constants for look commands (defined here to avoid config dependency issues)
+    MAX_YAW_ANGLE = 60.0 * np.pi / 180.0   # ~30 degrees for look left/right
+    
     def __init__(self, config):
         self.config = config
         self.previous_gait_toggle = 0
@@ -40,6 +43,11 @@ class BluetoothInterface:
         self.movement_queue = []
         self.current_movement = None
         self.movement_start_time = None
+        
+        # Track trot state for automatic trot management
+        self.auto_trot_active = False
+        self.needs_trot_activation = False
+        self.needs_trot_deactivation = False
         
     def _get_default_message(self):
         """Return default message structure (neutral position)"""
@@ -81,6 +89,7 @@ class BluetoothInterface:
     def queue_movement_command(self, command_type, duration=1.0, rate=None):
         """
         Queue a timed movement command (for MCP block programming)
+        Movement commands automatically activate trot mode.
         
         Args:
             command_type: Type of movement ('forward', 'backward', 'left', 'right', 'turn_left', 'turn_right')
@@ -91,7 +100,8 @@ class BluetoothInterface:
             "type": command_type,
             "duration": duration,
             "rate": rate,
-            "start_time": None  # Will be set when movement starts
+            "start_time": None,  # Will be set when movement starts
+            "requires_trot": True  # Flag to indicate this needs trot mode
         }
         with self.lock:
             self.movement_queue.append(movement)
@@ -99,10 +109,11 @@ class BluetoothInterface:
     
     def queue_pose_command(self, pose_type, duration=1.0):
         """
-        Queue a pose/attitude command
+        Queue a pose/attitude command (look commands)
         
         Args:
-            pose_type: Type of pose ('look_up', 'look_down', 'sit', etc.)
+            pose_type: Type of pose ('look_up', 'look_down', 'look_left', 'look_right', 
+                      'look_up_left', 'look_up_right', 'look_down_left', 'look_down_right')
             duration: How long to hold the pose
         """
         pose = {
@@ -116,10 +127,10 @@ class BluetoothInterface:
     
     def queue_discrete_command(self, command_type):
         """
-        Queue a discrete command (hop, trot, rest, etc.)
+        Queue a discrete command (trot, wake_up, rest, etc.)
         
         Args:
-            command_type: Type of command ('hop', 'trot', 'rest', 'stand')
+            command_type: Type of command ('trot', 'wake_up', 'rest')
         """
         cmd = {
             "type": command_type,
@@ -129,9 +140,14 @@ class BluetoothInterface:
             self.movement_queue.append(cmd)
             self.last_update_time = time.time()
     
-    def _process_movement_queue(self, command):
+    def _process_movement_queue(self, state, command):
         """
-        Process queued movement commands and update the command object
+        Process queued movement commands and update the command object.
+        Automatically manages trot mode for movement commands.
+        
+        Args:
+            state: Current robot state (for incremental updates)
+            command: Command object to update
         
         Returns:
             True if a queued movement is active, False otherwise
@@ -147,11 +163,43 @@ class BluetoothInterface:
                 elif self.current_movement["start_time"] and \
                      (current_time - self.current_movement["start_time"]) >= self.current_movement["duration"]:
                     # Timed movement finished
+                    # If this was a trot-requiring movement and no more trot movements queued, deactivate trot
+                    if self.current_movement.get("requires_trot"):
+                        has_more_trot_movements = any(m.get("requires_trot", False) for m in self.movement_queue)
+                        if not has_more_trot_movements and self.auto_trot_active:
+                            self.needs_trot_deactivation = True
                     self.current_movement = None
+            
+            # Handle trot deactivation
+            if self.needs_trot_deactivation:
+                command.trot_event = True
+                self.auto_trot_active = False
+                self.needs_trot_deactivation = False
+                return True
+            
+            # Handle trot activation (must happen before starting movement)
+            if self.needs_trot_activation:
+                command.trot_event = True
+                self.auto_trot_active = True
+                self.needs_trot_activation = False
+                return True
             
             # Start next queued movement if available
             if not self.current_movement and len(self.movement_queue) > 0:
                 self.current_movement = self.movement_queue.pop(0)
+                
+                # If this movement requires trot and trot is not active, schedule activation
+                if self.current_movement.get("requires_trot") and not self.auto_trot_active:
+                    self.needs_trot_activation = True
+                    # Put movement back in queue to execute after trot activates
+                    self.movement_queue.insert(0, self.current_movement)
+                    self.current_movement = None
+                    # Trigger trot activation on next call
+                    command.trot_event = True
+                    self.auto_trot_active = True
+                    self.needs_trot_activation = False
+                    return True
+                
                 if not self.current_movement.get("discrete"):
                     self.current_movement["start_time"] = current_time
             
@@ -161,22 +209,20 @@ class BluetoothInterface:
                 mv_type = mv["type"]
                 
                 # Discrete commands
-                if mv_type == "hop":
-                    command.hop_event = True
-                elif mv_type == "trot":
-                    command.trot_event = True
+                if mv_type == "wake_up":
+                    # Activate robot (one-way, not toggle)
+                    command.activate_event = True
                 elif mv_type == "rest":
-                    # Use trot_event to transition from TROT to REST
-                    # Controller's trot_transition_mapping handles: TROT→REST, REST→TROT
-                    command.trot_event = True
-                elif mv_type == "stand":
-                    # Reset to neutral standing position
-                    command.horizontal_velocity = np.array([0.0, 0.0])
-                    command.yaw_rate = 0.0
-                    command.pitch = 0.0
-                    command.roll = 0.0
+                    # Deactivate robot (one-way, not toggle)
+                    # First deactivate trot if active
+                    if self.auto_trot_active:
+                        self.needs_trot_deactivation = True
+                        self.auto_trot_active = False
+                    # Set force_active to False to allow deactivation
+                    self.set_force_active(False)
+                    command.activate_event = True
                 
-                # Movement commands
+                # Movement commands (trot mode handled automatically)
                 elif mv_type == "forward":
                     command.horizontal_velocity = np.array([self.config.max_x_velocity * 0.3, 0.0])
                 elif mv_type == "backward":
@@ -185,6 +231,14 @@ class BluetoothInterface:
                     command.horizontal_velocity = np.array([0.0, self.config.max_y_velocity * 0.3])
                 elif mv_type == "right":
                     command.horizontal_velocity = np.array([0.0, -self.config.max_y_velocity * 0.3])
+                elif mv_type == "forward_left":
+                    command.horizontal_velocity = np.array([self.config.max_x_velocity * 0.21, self.config.max_y_velocity * 0.21])
+                elif mv_type == "forward_right":
+                    command.horizontal_velocity = np.array([self.config.max_x_velocity * 0.21, -self.config.max_y_velocity * 0.21])
+                elif mv_type == "backward_left":
+                    command.horizontal_velocity = np.array([-self.config.max_x_velocity * 0.21, self.config.max_y_velocity * 0.21])
+                elif mv_type == "backward_right":
+                    command.horizontal_velocity = np.array([-self.config.max_x_velocity * 0.21, -self.config.max_y_velocity * 0.21])
                 elif mv_type == "turn_left":
                     rate = mv.get("rate", 0.8)
                     command.yaw_rate = rate
@@ -192,13 +246,30 @@ class BluetoothInterface:
                     rate = mv.get("rate", 0.8)
                     command.yaw_rate = -rate
                 
-                # Pose commands
+                # Pose/Look commands (require active but not trot mode)
                 elif mv_type == "look_up":
-                    command.pitch = self.config.max_pitch * 0.5
+                    command.pitch = self.config.max_pitch * 0.8
                 elif mv_type == "look_down":
-                    command.pitch = -self.config.max_pitch * 0.5
-                elif mv_type == "sit":
-                    command.height = self.config.default_z_ref - 0.03  # Lower the body
+                    command.pitch = -self.config.max_pitch * 0.8
+                elif mv_type == "look_left":
+                    # Use yaw_rate for head movement in non-trot state (like web joystick rx)
+                    command.yaw_rate = self.config.max_yaw_rate * 0.8
+                elif mv_type == "look_right":
+                    # Use yaw_rate for head movement in non-trot state (like web joystick rx)
+                    command.yaw_rate = -self.config.max_yaw_rate * 0.8
+                elif mv_type == "look_up_left":
+                    command.pitch = self.config.max_pitch * 0.35
+                    command.yaw_rate = self.config.max_yaw_rate * 0.35
+                elif mv_type == "look_up_right":
+                    command.pitch = self.config.max_pitch * 0.35
+                    command.yaw_rate = -self.config.max_yaw_rate * 0.35
+                elif mv_type == "look_down_left":
+                    command.pitch = -self.config.max_pitch * 0.35
+                    command.yaw_rate = self.config.max_yaw_rate * 0.35
+                elif mv_type == "look_down_right":
+                    command.pitch = -self.config.max_pitch * 0.35
+                    command.yaw_rate = -self.config.max_yaw_rate * 0.35
+                    command.roll = state.roll + self.config.dt * self.config.roll_speed * -1.0
                 
                 return True
         
@@ -222,7 +293,7 @@ class BluetoothInterface:
             # If we have a queued movement, we are "connected" and should process it
             # even if the last joystick message was old
             if self.current_movement or len(self.movement_queue) > 0:
-                self._process_movement_queue(command)
+                self._process_movement_queue(state, command)
                 return command
 
             if (time.time() - self.last_update_time) > self.timeout:
@@ -233,7 +304,7 @@ class BluetoothInterface:
             msg = self.current_msg.copy()
         
         # If there are queued movements, process them first
-        if self._process_movement_queue(command):
+        if self._process_movement_queue(state, command):
             # Queued movement is active, return that command
             return command
         
