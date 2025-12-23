@@ -385,3 +385,29 @@ class BluetoothInterface:
             self.force_active = active
             if active:
                 self.last_update_time = time.time()
+    
+    def clear_all_queues(self):
+        """
+        Clear all movement queues and stop current movement.
+        Used as an emergency stop / failsafe when system quit is received.
+        """
+        with self.lock:
+            # Clear the movement queue
+            self.movement_queue.clear()
+            
+            # Stop current movement
+            self.current_movement = None
+            self.movement_start_time = None
+            
+            # Reset trot state flags
+            self.auto_trot_active = False
+            self.needs_trot_activation = False
+            self.needs_trot_deactivation = False
+            
+            # Disable force active mode
+            self.force_active = False
+            
+            # Reset to default neutral message
+            self.current_msg = self._get_default_message()
+            
+            print("[BluetoothInterface] All queues cleared - emergency stop")

@@ -38,9 +38,9 @@ TOOL_HANDLERS = {
     
     # Compatibility with Block-Xiaozhi interface
     "self.system.quit": {
-        "handler": "rest",
-        "log": "System quit (mapping to rest)",
-        "result": "Robot deactivated"
+        "handler": "quit",
+        "log": "System quit - stopping all motion",
+        "result": "Robot deactivated, all queues cleared"
     },
     
     # Movement commands (with time parameter)
@@ -574,6 +574,15 @@ class MinipupperCharacteristic(Characteristic):
                     self.bluetooth_interface.queue_discrete_command("rest")
                     self.bluetooth_interface.set_force_active(False)
                     result_text = handler_config.get("result", "Queued: rest")
+                else:
+                    result_text = "BluetoothInterface not available"
+                    
+            elif handler_type == "quit":
+                # Quit command - clear all queues and stop all motion (failsafe)
+                if self.bluetooth_interface:
+                    self.bluetooth_interface.clear_all_queues()
+                    self.bluetooth_interface.queue_discrete_command("rest")
+                    result_text = handler_config.get("result", "All queues cleared, robot deactivated")
                 else:
                     result_text = "BluetoothInterface not available"
                     
