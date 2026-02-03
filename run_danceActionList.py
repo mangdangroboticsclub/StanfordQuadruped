@@ -3,8 +3,8 @@ import time
 from src.IMU import IMU
 from src.Controller import Controller
 from src.State import State
-from MangDang.mini_pupper.HardwareInterface import HardwareInterface
-from MangDang.mini_pupper.Config import Configuration
+from MangDang.mini_pupper.HardwareInterface import HardwareInterface, Joint_checker
+from MangDang.mini_pupper.Config import Configuration, ENABLE_JOINT_LIMITS
 from pupper.Kinematics import four_legs_inverse_kinematics
 from MangDang.mini_pupper.display import Display
 from src.MovementScheme import MovementScheme
@@ -18,8 +18,15 @@ def main(use_imu=False):
     # Create config
     config = Configuration()
     hardware_interface = HardwareInterface()
+    joint_checker = Joint_checker()
     disp = Display()
     disp.show_ip()
+    
+    # 显示角度限制状态
+    if joint_checker.enabled:
+        print("✅ 角度限制: 已启用 (全局配置) - 舞蹈动作将被保护")
+    else:
+        print("⚠️  角度限制: 已关闭 (全局配置) - 舞蹈动作可能超限！")
 
     # Create imu handle
     if use_imu:
@@ -72,8 +79,13 @@ def main(use_imu=False):
             print("exit the process")
             break
 
+        # Check joint angle limits before applying
+        joint_checker.check_limit(state.joint_angles)
 
         # Update the pwm widths going to the servos
         hardware_interface.set_actuator_postions(state.joint_angles)
+        
+        # Update joint checker state
+        joint_checker.update(state.joint_angles)
 
 main()

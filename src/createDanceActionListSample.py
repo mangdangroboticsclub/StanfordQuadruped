@@ -61,48 +61,20 @@
 # Level 3(for beyond) samples
 #  body_cycle()
 #  head_ellipse()
-#
-#
 
 from src.MovementGroup import MovementGroups
-
 Move = MovementGroups()
 
-# Level 1: movements without input parameters
 Move.look_right()
-Move.look_upperright()
-Move.look_up()
-Move.look_upperleft()
 Move.look_left()
-Move.look_leftlower()
-Move.look_down()
-Move.look_rightlower()
 Move.look_right()
-Move.stop()
-Move.move_right()
-Move.move_forward()
-Move.move_left()
-Move.move_backward()
-Move.move_right()
-Move.stop()
-
-# Level 2: movements with input parameters
-Move.head_move(20)
-Move.stop()
-Move.body_row(10)
-Move.body_row(-10)
-Move.stop()
-Move.gait_uni(0.25,0)
-Move.gait_uni(0.35, 0.1)
-Move.stop()
-Move.height_move(0.03)
-Move.height_move(-0.02)
-Move.stop()
-Move.gait_uni(0.1)
-Move.stop()
-
-# Level 3 samples
-Move.body_cycle()
+Move.look_left()
+#Move.body_cycle()
 #Move.head_ellipse()
+#Move.height_move(-0.04)
+#Move.foreleg_lift('right')
+#Move.backleg_lift()
+#Move.look_up()
+
 
 MovementLib = Move.MovementLib
