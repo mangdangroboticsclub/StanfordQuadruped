@@ -18,7 +18,7 @@ def main(use_imu=False):
 
     # Create config
     config = Configuration()
-    hardware_interface = HardwareInterface()
+    hardware_interface = HardwareInterface(True)
     disp = Display()
     disp.show_ip()
 
