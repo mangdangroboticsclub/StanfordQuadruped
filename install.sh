@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 # check Ubuntu version
 source /etc/os-release
 
@@ -12,6 +14,46 @@ fi
 
 ### Get directory where this script is installed
 BASEDIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+clone_or_update_repo() {
+    local repo_url=$1
+    local repo_dir=$2
+
+    if [ -d "$repo_dir/.git" ]
+    then
+        git -C "$repo_dir" pull --ff-only || true
+    else
+        git clone "$repo_url" "$repo_dir"
+    fi
+}
+
+patch_ds4drv_py312_compat() {
+    local ds4drv_root
+    ds4drv_root=$(python3 - <<'PY'
+import glob
+matches = glob.glob('/usr/local/lib/python*/dist-packages/ds4drv')
+print(matches[0] if matches else '')
+PY
+)
+
+    if [ -z "$ds4drv_root" ]
+    then
+        return
+    fi
+
+    local ds4drv_config="$ds4drv_root/config.py"
+    local ds4drv_input="$ds4drv_root/actions/input.py"
+
+    if [ -f "$ds4drv_config" ]
+    then
+        sudo sed -i 's/configparser.SafeConfigParser/configparser.ConfigParser/g' "$ds4drv_config"
+    fi
+
+    if [ -f "$ds4drv_input" ]
+    then
+        sudo sed -i 's/joystick.device.device.fn/getattr(joystick.device.device, "fn", getattr(joystick.device.device, "path", "unknown"))/g' "$ds4drv_input"
+    fi
+}
 
 ### Append to release file
 echo STANFORD_VERSION=\"$(cd $BASEDIR; ~/mini_pupper_bsp/get-version.sh)\" >> ~/mini-pupper-release
@@ -29,9 +71,25 @@ then
 fi
 
 sudo apt-get install -y libatlas-base-dev
-sudo pip3 install numpy transforms3d pyserial
-sudo pip install numpy transforms3d pyserial
 sudo apt-get install -y unzip
+sudo apt-get install -y bluez
+
+# Prefer distro packages for core deps, then pip fallback for transforms3d.
+sudo apt-get install -y python3-numpy python3-serial python3-pip
+if python3 -c "import transforms3d" >/dev/null 2>&1
+then
+    true
+else
+    if sudo python3 -m pip install transforms3d
+    then
+        true
+    else
+        sudo python3 -m pip install --break-system-packages transforms3d
+    fi
+fi
+
+# Allow downstream installers to run on Ubuntu 24 where pip is externally managed.
+export PIP_BREAK_SYSTEM_PACKAGES=1
 
 # add bridge to network configuration
 $BASEDIR/configure_network.sh
@@ -39,34 +97,77 @@ $BASEDIR/configure_network.sh
 echo $BASEDIR/configure_network.sh >> /home/ubuntu/mini_pupper_bsp/System/check-reconfigure.sh
 
 cd ~
-git clone https://github.com/stanfordroboticsclub/PupperCommand.git
+clone_or_update_repo https://github.com/stanfordroboticsclub/PupperCommand.git PupperCommand
 cd PupperCommand
 sed -i "s/pi/ubuntu/" joystick.service
+sed -i 's@yes | sudo pip install ds4drv@yes | sudo python3 -m pip install --break-system-packages ds4drv@' install.sh
+sed -i "s|sudo ln -s |sudo ln -sf |" install.sh
 sudo bash install.sh
 
 cd ~
-git clone https://github.com/stanfordroboticsclub/UDPComms.git
+clone_or_update_repo https://github.com/stanfordroboticsclub/UDPComms.git UDPComms
 cd UDPComms
+sed -i 's@yes | sudo pip3 install msgpack@yes | sudo python3 -m pip install --break-system-packages msgpack@' install.sh
+sed -i 's@yes | sudo pip install msgpack@yes | sudo python3 -m pip install --break-system-packages msgpack@' install.sh
+sed -i 's@yes | sudo pip3 install pexpect@yes | sudo python3 -m pip install --break-system-packages pexpect@' install.sh
+sed -i "s|sudo ln -s |sudo ln -sf |" install.sh
 sudo bash install.sh
 
 cd ~
-git clone https://github.com/stanfordroboticsclub/PS4Joystick.git
+clone_or_update_repo https://github.com/stanfordroboticsclub/PS4Joystick.git PS4Joystick
 cd PS4Joystick
 sed -i "s/pi/ubuntu/" joystick.service
+sed -i 's@yes | sudo pip3 install ds4drv@yes | sudo python3 -m pip install --break-system-packages ds4drv@' install.sh
+if ! grep -q "import shutil" PS4Joystick.py
+then
+    sed -i '1aimport shutil' PS4Joystick.py
+fi
+sed -i 's@subprocess.run(\["hciconfig", "hciX", "up"\])@subprocess.run(["hciconfig", "hciX", "up"], check=False) if shutil.which("hciconfig") else None@' PS4Joystick.py
 sudo bash install.sh
+patch_ds4drv_py312_compat
 
 cd ~
 sudo systemctl enable joystick
 
 cd ~/StanfordQuadruped
-sudo ln -s $(realpath .)/robot.service /etc/systemd/system/
+sudo ln -sf $(realpath .)/robot.service /etc/systemd/system/robot.service
 sudo systemctl daemon-reload
 sudo systemctl enable robot
 sudo systemctl start robot
 
-sudo mv restart_joy.service /lib/systemd/system/
-sudo mv joystart.sh /sbin/
+if [ -f restart_joy.service ]
+then
+    sudo install -m 644 restart_joy.service /lib/systemd/system/restart_joy.service
+elif [ ! -f /lib/systemd/system/restart_joy.service ]
+then
+    echo "restart_joy.service not found"
+    exit 1
+fi
+
+if [ -f joystart.sh ]
+then
+    sudo install -m 755 joystart.sh /sbin/joystart.sh
+elif [ ! -f /sbin/joystart.sh ]
+then
+    echo "joystart.sh not found"
+    exit 1
+fi
+
 sudo systemctl enable restart_joy
+
+if systemctl cat battery_monitor >/dev/null 2>&1
+then
+    sudo mkdir -p /etc/systemd/system/battery_monitor.service.d
+    sudo tee /etc/systemd/system/battery_monitor.service.d/override.conf >/dev/null <<'EOF'
+[Service]
+Type=simple
+RemainAfterExit=no
+Restart=always
+RestartSec=2
+EOF
+fi
+
+sudo systemctl daemon-reload
 source  ~/mini-pupper-release
 if [ "$MACHINE" == "x86_64" ]
 then
