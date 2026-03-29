@@ -1,11 +1,10 @@
 [Unit]
 Description=Joystick restart service
-Requires=robot.service
 After=robot.service
 
 [Service]
 Type=oneshot
-RemainAfterExit=true
+RemainAfterExit=no
 ExecStart=bash /sbin/joystart.sh
 
 [Install]
