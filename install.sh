@@ -99,7 +99,7 @@ sudo apt-get install -y unzip
 sudo apt-get install -y bluez
 
 # Prefer distro packages for core deps, then pip fallback for transforms3d.
-sudo apt-get install -y python3-numpy python3-serial python3-pip
+sudo apt-get install -y python3-numpy python3-serial python3-pip python3-msgpack
 if python3 -c "import transforms3d" >/dev/null 2>&1
 then
     true
@@ -141,6 +141,10 @@ then
 fi
 sed -i 's@subprocess.run(\["hciconfig", "hciX", "up"\])@subprocess.run(["hciconfig", "hciX", "up"], check=False) if shutil.which("hciconfig") else None@' PS4Joystick.py
 sudo env PIP_BREAK_SYSTEM_PACKAGES=1 bash install.sh
+patch_ds4drv_py312_compat
+
+# Final guard: ensure runtime Python deps are present even if upstream scripts silently skip failures.
+pip_install_compat ds4drv msgpack pexpect
 patch_ds4drv_py312_compat
 
 cd ~
