@@ -27,6 +27,30 @@ clone_or_update_repo() {
     fi
 }
 
+pip_supports_break_system_packages() {
+    python3 -m pip help install 2>/dev/null | grep -q -- '--break-system-packages'
+}
+
+pip_install_compat() {
+    if pip_supports_break_system_packages
+    then
+        sudo python3 -m pip install --break-system-packages "$@"
+    else
+        sudo python3 -m pip install "$@"
+    fi
+}
+
+patch_legacy_pip_installs() {
+    local script_file=$1
+    if [ ! -f "$script_file" ]
+    then
+        return
+    fi
+
+    sed -E -i 's@(^|[[:space:]])sudo[[:space:]]+pip3?[[:space:]]+install@\1python3 -m pip install --break-system-packages@g' "$script_file"
+    sed -E -i 's@(^|[[:space:]])pip3?[[:space:]]+install@\1python3 -m pip install --break-system-packages@g' "$script_file"
+}
+
 patch_ds4drv_py312_compat() {
     local ds4drv_root
     ds4drv_root=$(python3 - <<'PY'
@@ -80,12 +104,7 @@ if python3 -c "import transforms3d" >/dev/null 2>&1
 then
     true
 else
-    if sudo python3 -m pip install transforms3d
-    then
-        true
-    else
-        sudo python3 -m pip install --break-system-packages transforms3d
-    fi
+    pip_install_compat transforms3d
 fi
 
 # Allow downstream installers to run on Ubuntu 24 where pip is externally managed.
@@ -100,30 +119,28 @@ cd ~
 clone_or_update_repo https://github.com/stanfordroboticsclub/PupperCommand.git PupperCommand
 cd PupperCommand
 sed -i "s/pi/ubuntu/" joystick.service
-sed -i 's@yes | sudo pip install ds4drv@yes | sudo python3 -m pip install --break-system-packages ds4drv@' install.sh
+patch_legacy_pip_installs install.sh
 sed -i "s|sudo ln -s |sudo ln -sf |" install.sh
-sudo bash install.sh
+sudo env PIP_BREAK_SYSTEM_PACKAGES=1 bash install.sh
 
 cd ~
 clone_or_update_repo https://github.com/stanfordroboticsclub/UDPComms.git UDPComms
 cd UDPComms
-sed -i 's@yes | sudo pip3 install msgpack@yes | sudo python3 -m pip install --break-system-packages msgpack@' install.sh
-sed -i 's@yes | sudo pip install msgpack@yes | sudo python3 -m pip install --break-system-packages msgpack@' install.sh
-sed -i 's@yes | sudo pip3 install pexpect@yes | sudo python3 -m pip install --break-system-packages pexpect@' install.sh
+patch_legacy_pip_installs install.sh
 sed -i "s|sudo ln -s |sudo ln -sf |" install.sh
-sudo bash install.sh
+sudo env PIP_BREAK_SYSTEM_PACKAGES=1 bash install.sh
 
 cd ~
 clone_or_update_repo https://github.com/stanfordroboticsclub/PS4Joystick.git PS4Joystick
 cd PS4Joystick
 sed -i "s/pi/ubuntu/" joystick.service
-sed -i 's@yes | sudo pip3 install ds4drv@yes | sudo python3 -m pip install --break-system-packages ds4drv@' install.sh
+patch_legacy_pip_installs install.sh
 if ! grep -q "import shutil" PS4Joystick.py
 then
     sed -i '1aimport shutil' PS4Joystick.py
 fi
 sed -i 's@subprocess.run(\["hciconfig", "hciX", "up"\])@subprocess.run(["hciconfig", "hciX", "up"], check=False) if shutil.which("hciconfig") else None@' PS4Joystick.py
-sudo bash install.sh
+sudo env PIP_BREAK_SYSTEM_PACKAGES=1 bash install.sh
 patch_ds4drv_py312_compat
 
 cd ~
