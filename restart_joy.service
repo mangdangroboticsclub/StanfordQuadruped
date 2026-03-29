@@ -4,7 +4,8 @@ Requires=robot.service
 After=robot.service
 
 [Service]
-Type=forking
+Type=oneshot
+RemainAfterExit=true
 ExecStart=bash /sbin/joystart.sh
 
 [Install]
