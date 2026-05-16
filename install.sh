@@ -15,18 +15,6 @@ fi
 ### Get directory where this script is installed
 BASEDIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-clone_or_update_repo() {
-    local repo_url=$1
-    local repo_dir=$2
-
-    if [ -d "$repo_dir/.git" ]
-    then
-        git -C "$repo_dir" pull --ff-only || true
-    else
-        git clone "$repo_url" "$repo_dir"
-    fi
-}
-
 pip_supports_break_system_packages() {
     python3 -m pip help install 2>/dev/null | grep -q -- '--break-system-packages'
 }
@@ -111,12 +99,12 @@ fi
 export PIP_BREAK_SYSTEM_PACKAGES=1
 
 # add bridge to network configuration
-$BASEDIR/configure_network.sh
+sudo $BASEDIR/configure_network.sh
 # reconfigure network each time network configuration has changed
 echo $BASEDIR/configure_network.sh >> /home/ubuntu/mini_pupper_bsp/System/check-reconfigure.sh
 
 cd ~
-clone_or_update_repo https://github.com/stanfordroboticsclub/PupperCommand.git PupperCommand
+git clone https://github.com/mangdangroboticsclub/PupperCommand.git
 cd PupperCommand
 sed -i "s/pi/ubuntu/" joystick.service
 patch_legacy_pip_installs install.sh
@@ -124,14 +112,14 @@ sed -i "s|sudo ln -s |sudo ln -sf |" install.sh
 sudo env PIP_BREAK_SYSTEM_PACKAGES=1 bash install.sh
 
 cd ~
-clone_or_update_repo https://github.com/stanfordroboticsclub/UDPComms.git UDPComms
+git clone https://github.com/mangdangroboticsclub/UDPComms.git
 cd UDPComms
 patch_legacy_pip_installs install.sh
 sed -i "s|sudo ln -s |sudo ln -sf |" install.sh
 sudo env PIP_BREAK_SYSTEM_PACKAGES=1 bash install.sh
 
 cd ~
-clone_or_update_repo https://github.com/stanfordroboticsclub/PS4Joystick.git PS4Joystick
+git clone https://github.com/mangdangroboticsclub/PS4Joystick.git
 cd PS4Joystick
 sed -i "s/pi/ubuntu/" joystick.service
 patch_legacy_pip_installs install.sh
@@ -156,39 +144,9 @@ sudo systemctl daemon-reload
 sudo systemctl enable robot
 sudo systemctl start robot
 
-if [ -f restart_joy.service ]
-then
-    sudo install -m 644 restart_joy.service /lib/systemd/system/restart_joy.service
-elif [ ! -f /lib/systemd/system/restart_joy.service ]
-then
-    echo "restart_joy.service not found"
-    exit 1
-fi
-
-if [ -f joystart.sh ]
-then
-    sudo install -m 755 joystart.sh /sbin/joystart.sh
-elif [ ! -f /sbin/joystart.sh ]
-then
-    echo "joystart.sh not found"
-    exit 1
-fi
-
+sudo mv restart_joy.service /lib/systemd/system/
+sudo mv joystart.sh /sbin/
 sudo systemctl enable restart_joy
-
-if systemctl cat battery_monitor >/dev/null 2>&1
-then
-    sudo mkdir -p /etc/systemd/system/battery_monitor.service.d
-    sudo tee /etc/systemd/system/battery_monitor.service.d/override.conf >/dev/null <<'EOF'
-[Service]
-Type=simple
-RemainAfterExit=no
-Restart=always
-RestartSec=2
-EOF
-fi
-
-sudo systemctl daemon-reload
 source  ~/mini-pupper-release
 if [ "$MACHINE" == "x86_64" ]
 then
